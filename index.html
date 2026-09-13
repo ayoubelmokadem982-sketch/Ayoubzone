@@ -244,6 +244,51 @@
     </div>
 
     <div class="card">
+      <h2>💸 Enregistrer une dépense (sortie de caisse)</h2>
+      <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Achat de stock, facture, réparation de matériel... tout argent qui sort d'une caisse.</p>
+      <label>Depuis quelle caisse ?</label>
+      <select id="depenseCaisse">
+        <option value="commerce">🛒 Commerce & Réparations</option>
+        <option value="playstation">🎮 PlayStation</option>
+        <option value="tasshilat">💳 Tasshilat</option>
+        <option value="general">💰 Total général (toutes les caisses)</option>
+      </select>
+      <div class="row">
+        <div><label>Montant (DH)</label><input type="number" id="depenseMontant" placeholder="Ex: 200"></div>
+        <div><label>Motif</label><input type="text" id="depenseMotif" placeholder="Ex: Achat stock"></div>
+      </div>
+      <button class="btn danger" onclick="enregistrerDepense()">➖ Enregistrer la dépense</button>
+
+      <table>
+        <thead><tr><th>Date</th><th>Caisse</th><th>Motif</th><th>Montant</th><th></th></tr></thead>
+        <tbody id="depensesBody"></tbody>
+      </table>
+      <div class="empty" id="depensesEmpty">Aucune dépense enregistrée.</div>
+    </div>
+
+    <details class="card">
+      <summary>🔁 Dépenses récurrentes mensuelles</summary>
+      <div class="details-body">
+        <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Loyer, électricité, internet... définissez-les une fois, l'app vous rappelle chaque mois.</p>
+        <label>Nom</label>
+        <input type="text" id="recNom" placeholder="Ex: Loyer">
+        <div class="row">
+          <div><label>Montant (DH)</label><input type="number" id="recMontant" placeholder="Ex: 1500"></div>
+          <div><label>Depuis quelle caisse ?</label>
+            <select id="recCaisse">
+              <option value="commerce">🛒 Commerce</option>
+              <option value="playstation">🎮 PlayStation</option>
+              <option value="tasshilat">💳 Tasshilat</option>
+              <option value="general">💰 Total général</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn secondary" onclick="ajouterDepenseRecurrente()">+ Ajouter</button>
+        <div id="depensesRecurrentesList" style="margin-top:12px;"></div>
+      </div>
+    </details>
+
+    <div class="card">
       <h2>Aperçu rapide</h2>
       <div class="grid">
         <div><label>Solde Tasshilat disponible</label><div id="dashSolde" style="font-size:18px;font-weight:700;">0 DH</div></div>
@@ -381,7 +426,23 @@
     </div>
 
     <div class="card">
-      <h2>Ajouter / modifier un produit</h2>
+      <h2>🔄 Réapprovisionner un produit existant</h2>
+      <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Évitez de retaper un produit déjà enregistré — sélectionnez-le, indiquez juste la quantité reçue et le prix. Si le prix d'achat est différent du lot existant, un nouveau lot séparé sera créé automatiquement pour préserver le coût réel de chaque dépôt.</p>
+      <label>Produit</label>
+      <select id="stockProduitExistant" onchange="onSelectProduitExistantChange()">
+        <option value="">— Sélectionner un produit —</option>
+      </select>
+      <label>Quantité reçue (sera ajoutée au stock actuel)</label>
+      <input type="number" id="reapproQte" placeholder="Ex: 10">
+      <div class="row">
+        <div><label>Prix d'achat (DH)</label><input type="number" id="reapproPrixAchat"></div>
+        <div><label>Prix de vente (DH)</label><input type="number" id="reapproPrixVente"></div>
+      </div>
+      <button class="btn secondary" onclick="reapprovisionnerProduit()">🔄 Réapprovisionner</button>
+    </div>
+
+    <div class="card">
+      <h2>Ajouter un nouveau produit</h2>
 
       <label>Nom du produit</label>
       <input type="text" id="stockNom" placeholder="Ex: Câble USB-C">
@@ -476,6 +537,8 @@ function defaultData(){
     stock:[],
     ventesHistory:[],
     reparations:[],
+    depenses:[],
+    depensesRecurrentes:[],
     security:{ pinEnabled:false, pin:"" },
     theme:"dark",
     lastBackupTs:null
@@ -592,6 +655,8 @@ function renderDashboard(){
   renderStatsMensuelles();
   renderStatsAnnuelles();
   renderChart7Jours();
+  renderDepenses();
+  renderDepensesRecurrentes();
 }
 
 function todayStartTs(){
@@ -614,7 +679,10 @@ function genererRapportJour(){
   const venteProfit = venteToday.reduce((s,h)=>s+h.profit,0);
   const repAcompteToday = repCreesToday.reduce((s,r)=>s+r.acompte,0);
   const repRestantToday = repRecupToday.reduce((s,r)=>s+(r.montantFinal||0),0);
+  const depensesToday = data.depenses.filter(d=>d.ts && d.ts>=t0);
+  const depensesTotal = depensesToday.reduce((s,d)=>s+d.montant,0);
   const totalJour = psTotal + tashTotal + venteTotal + repAcompteToday + repRestantToday;
+  const netJour = totalJour - depensesTotal;
 
   const box = document.getElementById("rapportJourBox");
   box.innerHTML = `
@@ -622,10 +690,211 @@ function genererRapportJour(){
     <p style="margin:4px 0;"><strong>💳 Tasshilat</strong> — ${tashToday.length} opération(s), commissions : ${fmt(tashTotal)}</p>
     <p style="margin:4px 0;"><strong>🛒 Ventes accessoires</strong> — ${venteToday.length} vente(s) : ${fmt(venteTotal)} (bénéfice : ${fmt(venteProfit)})</p>
     <p style="margin:4px 0;"><strong>🔧 Réparations</strong> — ${repCreesToday.length} nouvelle(s) fiche(s) (acomptes : ${fmt(repAcompteToday)}), ${repRecupToday.length} récupérée(s) (${fmt(repRestantToday)})</p>
-    <p style="margin:10px 0 0 0; padding-top:8px; border-top:1px solid var(--border); font-weight:700;">Total encaissé aujourd'hui : ${fmt(totalJour)}</p>
+    <p style="margin:4px 0;"><strong>💸 Dépenses</strong> — ${depensesToday.length} sortie(s) : ${fmt(depensesTotal)}</p>
+    <p style="margin:10px 0 0 0; padding-top:8px; border-top:1px solid var(--border);">Total encaissé aujourd'hui : <strong>${fmt(totalJour)}</strong></p>
+    <p style="margin:4px 0; font-weight:700;">Net après dépenses : ${fmt(netJour)}</p>
     <p style="margin:4px 0; font-size:11px; color:var(--text-dim);">Les soldes actuels des caisses ci-dessus incluent aussi ce qui n'a pas encore été vidé les jours précédents.</p>
   `;
   box.style.display = "block";
+}
+
+/* ---------- DEPENSES (SORTIES DE CAISSE) ---------- */
+function deduireDuTotalGeneral(montant){
+  const total = data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce;
+  let parts;
+  if(total <= 0){
+    const part = montant/3;
+    parts = {playstation:part, tasshilat:part, commerce:part};
+  } else {
+    parts = {
+      playstation: montant * (data.caisses.playstation/total),
+      tasshilat: montant * (data.caisses.tasshilat/total),
+      commerce: montant * (data.caisses.commerce/total)
+    };
+  }
+  data.caisses.playstation -= parts.playstation;
+  data.caisses.tasshilat -= parts.tasshilat;
+  data.caisses.commerce -= parts.commerce;
+  return parts;
+}
+
+function enregistrerDepense(){
+  const caisse = document.getElementById("depenseCaisse").value;
+  const montant = parseFloat(document.getElementById("depenseMontant").value);
+  const motif = document.getElementById("depenseMotif").value.trim();
+  if(!montant || montant<=0){ toast("Montant invalide."); return; }
+  if(!motif){ toast("Veuillez indiquer un motif."); return; }
+  const soldeActuel = (caisse === 'general')
+    ? (data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce)
+    : data.caisses[caisse];
+  const finaliser = ()=>{
+    let repartition = null;
+    if(caisse === 'general'){
+      repartition = deduireDuTotalGeneral(montant);
+    } else {
+      data.caisses[caisse] -= montant;
+    }
+    data.depenses.unshift({
+      id: uid(),
+      date: new Date().toLocaleString('fr-FR'),
+      ts: Date.now(),
+      caisse, montant, motif, repartition
+    });
+    document.getElementById("depenseMontant").value = "";
+    document.getElementById("depenseMotif").value = "";
+    saveData();
+    renderAll();
+    toast("Dépense enregistrée : -"+fmt(montant));
+  };
+  if(montant > soldeActuel){
+    const label = caisse === 'general' ? "du total général" : "de cette caisse";
+    showModal("Solde insuffisant", "⚠️ Le solde "+label+" ("+fmt(soldeActuel)+") est inférieur à la dépense de "+fmt(montant)+". Continuer quand même (passage en négatif) ?", {
+      confirmLabel:"Continuer",
+      onConfirm: finaliser
+    });
+    return;
+  }
+  finaliser();
+}
+
+function supprimerDepense(id){
+  showModal("Supprimer la dépense", "Annuler cette dépense ? Le montant sera recrédité.", {
+    confirmLabel:"Annuler la dépense",
+    onConfirm:()=>{
+      const dep = data.depenses.find(d=>d.id===id);
+      if(dep){
+        if(dep.caisse === 'general' && dep.repartition){
+          data.caisses.playstation += dep.repartition.playstation;
+          data.caisses.tasshilat += dep.repartition.tasshilat;
+          data.caisses.commerce += dep.repartition.commerce;
+        } else {
+          data.caisses[dep.caisse] += dep.montant;
+        }
+        data.depenses = data.depenses.filter(d=>d.id!==id);
+        saveData();
+        renderAll();
+        toast("Dépense annulée, montant recrédité.");
+      }
+    }
+  });
+}
+
+const NOMS_CAISSES = { playstation:"🎮 PlayStation", tasshilat:"💳 Tasshilat", commerce:"🛒 Commerce", general:"💰 Total général" };
+
+/* ---------- DEPENSES RECURRENTES MENSUELLES ---------- */
+function currentMonthKey(){
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+}
+
+function ajouterDepenseRecurrente(){
+  const nom = document.getElementById("recNom").value.trim();
+  const montant = parseFloat(document.getElementById("recMontant").value);
+  const caisse = document.getElementById("recCaisse").value;
+  if(!nom || !montant || montant<=0){ toast("Veuillez remplir le nom et le montant."); return; }
+  data.depensesRecurrentes.push({id:uid(), nom, montant, caisse, lastPaidMonth:null});
+  document.getElementById("recNom").value = "";
+  document.getElementById("recMontant").value = "";
+  saveData();
+  renderDepensesRecurrentes();
+  toast("Dépense récurrente ajoutée.");
+}
+
+function supprimerDepenseRecurrente(id){
+  showModal("Supprimer", "Supprimer cette dépense récurrente ? (Les paiements déjà effectués restent dans l'historique des dépenses.)", {
+    confirmLabel:"Supprimer",
+    onConfirm:()=>{
+      data.depensesRecurrentes = data.depensesRecurrentes.filter(r=>r.id!==id);
+      saveData();
+      renderDepensesRecurrentes();
+    }
+  });
+}
+
+function payerDepenseRecurrente(id){
+  const r = data.depensesRecurrentes.find(x=>x.id===id);
+  if(!r) return;
+  const mk = currentMonthKey();
+  const soldeActuel = (r.caisse === 'general')
+    ? (data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce)
+    : data.caisses[r.caisse];
+  const finaliser = ()=>{
+    let repartition = null;
+    if(r.caisse === 'general'){
+      repartition = deduireDuTotalGeneral(r.montant);
+    } else {
+      data.caisses[r.caisse] -= r.montant;
+    }
+    data.depenses.unshift({
+      id: uid(),
+      date: new Date().toLocaleString('fr-FR'),
+      ts: Date.now(),
+      caisse: r.caisse, montant: r.montant, motif: r.nom + " (récurrent)", repartition
+    });
+    r.lastPaidMonth = mk;
+    saveData();
+    renderAll();
+    toast(r.nom + " marqué payé pour ce mois.");
+  };
+  if(r.montant > soldeActuel){
+    const label = r.caisse === 'general' ? "du total général" : "de la caisse "+(NOMS_CAISSES[r.caisse]||r.caisse);
+    showModal("Solde insuffisant", "⚠️ Le solde "+label+" ("+fmt(soldeActuel)+") est inférieur à "+fmt(r.montant)+". Continuer quand même ?", {
+      confirmLabel:"Continuer",
+      onConfirm: finaliser
+    });
+    return;
+  }
+  finaliser();
+}
+
+function renderDepensesRecurrentes(){
+  const box = document.getElementById("depensesRecurrentesList");
+  if(!box) return;
+  const mk = currentMonthKey();
+  if(data.depensesRecurrentes.length===0){
+    box.innerHTML = '<p class="empty" style="margin:0;">Aucune dépense récurrente définie.</p>';
+    return;
+  }
+  box.innerHTML = data.depensesRecurrentes.map(r=>{
+    const paye = r.lastPaidMonth === mk;
+    return `<div class="station" style="margin-bottom:8px;">
+      <div class="top">
+        <strong>${r.nom}</strong>
+        <span class="pill ${paye?'libre':'occupe'}">${paye?'✅ Payé ce mois':'⏳ En attente'}</span>
+      </div>
+      <div class="cost">${NOMS_CAISSES[r.caisse]||r.caisse} — ${fmt(r.montant)} / mois</div>
+      <div class="row" style="margin-top:8px;">
+        ${!paye ? `<button class="btn small" onclick="payerDepenseRecurrente('${r.id}')">✅ Marquer payé</button>` : ''}
+        <button class="btn small danger" onclick="supprimerDepenseRecurrente('${r.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function checkDepensesRecurrentesOnStart(){
+  const mk = currentMonthKey();
+  const enAttente = data.depensesRecurrentes.filter(r=>r.lastPaidMonth !== mk);
+  if(enAttente.length>0){
+    setTimeout(()=>{
+      const liste = enAttente.map(r=>r.nom).join(", ");
+      toast("🔁 Dépenses récurrentes en attente ce mois : "+liste, 6000);
+    }, 4200);
+  }
+}
+
+function renderDepenses(){
+  const body = document.getElementById("depensesBody");
+  if(!body) return;
+  body.innerHTML = "";
+  data.depenses.slice(0,50).forEach(d=>{
+    body.innerHTML += `<tr>
+      <td>${d.date}</td><td>${NOMS_CAISSES[d.caisse]||d.caisse}</td><td>${d.motif}</td>
+      <td class="amount" style="color:var(--danger);">-${fmt(d.montant)}</td>
+      <td><button class="btn small danger" onclick="supprimerDepense('${d.id}')">🗑</button></td>
+    </tr>`;
+  });
+  const emptyEl = document.getElementById("depensesEmpty");
+  if(emptyEl) emptyEl.style.display = data.depenses.length? "none":"block";
 }
 
 function viderCaisse(type){
@@ -973,6 +1242,55 @@ function renderTasshilat(){
 /* ---------- STOCK / ACCESSOIRES ---------- */
 let editingProductId = null;
 
+function renderSelectProduitExistant(){
+  const sel = document.getElementById("stockProduitExistant");
+  if(!sel) return;
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">— Sélectionner un produit —</option>' +
+    data.stock.map(p=>`<option value="${p.id}">${p.nom} (stock actuel : ${p.qte})</option>`).join("");
+  if(prevVal && data.stock.some(p=>p.id===prevVal)) sel.value = prevVal;
+}
+
+function onSelectProduitExistantChange(){
+  const sel = document.getElementById("stockProduitExistant");
+  const p = data.stock.find(x=>x.id===sel.value);
+  document.getElementById("reapproPrixAchat").value = p ? p.prixAchat : "";
+  document.getElementById("reapproPrixVente").value = p ? p.prixVente : "";
+}
+
+function reapprovisionnerProduit(){
+  const sel = document.getElementById("stockProduitExistant");
+  if(!sel.value){ toast("Veuillez sélectionner un produit."); return; }
+  const p = data.stock.find(x=>x.id===sel.value);
+  if(!p) return;
+  const qteAjoutee = parseInt(document.getElementById("reapproQte").value);
+  const prixAchat = parseFloat(document.getElementById("reapproPrixAchat").value);
+  const prixVente = parseFloat(document.getElementById("reapproPrixVente").value);
+  if(!qteAjoutee || qteAjoutee<=0){ toast("Veuillez indiquer la quantité reçue."); return; }
+  if(isNaN(prixAchat) || isNaN(prixVente)){ toast("Prix invalide."); return; }
+
+  const memePrixAchat = Math.round(prixAchat*100) === Math.round(p.prixAchat*100);
+
+  if(memePrixAchat){
+    // Même prix d'achat que le lot existant : fusion normale (le prix de vente peut être ajusté)
+    p.qte += qteAjoutee;
+    p.prixVente = prixVente;
+    toast("Stock mis à jour : "+p.nom+" (+"+qteAjoutee+", total "+p.qte+")");
+  } else {
+    // Prix d'achat différent : on crée un nouveau lot séparé pour ne jamais fausser le coût réel
+    // d'un lot précédent (ex: 1er arrivage à 10 DH, 2e arrivage à 20 DH doivent rester distincts).
+    data.stock.push({id:uid(), nom:p.nom, prixAchat, prixVente, qte:qteAjoutee});
+    toast("Prix d'achat différent : un nouveau lot séparé a été créé pour "+p.nom+" (pour préserver le coût réel de chaque dépôt).", 5000);
+  }
+
+  document.getElementById("reapproQte").value = "";
+  document.getElementById("reapproPrixAchat").value = "";
+  document.getElementById("reapproPrixVente").value = "";
+  sel.value = "";
+  saveData();
+  renderStock();
+}
+
 function ajouterProduit(){
   const nom = document.getElementById("stockNom").value.trim();
   const prixAchat = parseFloat(document.getElementById("stockPrixAchat").value);
@@ -1120,6 +1438,7 @@ function supprimerProduit(id){
 
 function renderStock(){
   renderVenteSelect();
+  renderSelectProduitExistant();
   const SEUIL_BAS = 3;
   const body = document.getElementById("stockBody");
   body.innerHTML = "";
@@ -1400,6 +1719,23 @@ function toggleTheme(){
 }
 
 /* ---------- VERROUILLAGE PAR MOT DE PASSE ---------- */
+let autoLockTimer = null;
+const DUREE_AUTO_LOCK = 2*60*60*1000; // 2 heures
+
+function startAutoLockTimer(){
+  if(autoLockTimer) clearTimeout(autoLockTimer);
+  if(data.security && data.security.pinEnabled){
+    autoLockTimer = setTimeout(()=>{
+      document.getElementById("lockOverlay").classList.remove("hidden");
+      setTimeout(()=>document.getElementById("lockPwInput").focus(), 100);
+    }, DUREE_AUTO_LOCK);
+  }
+}
+
+function stopAutoLockTimer(){
+  if(autoLockTimer){ clearTimeout(autoLockTimer); autoLockTimer = null; }
+}
+
 function checkLockOnStart(){
   const overlay = document.getElementById("lockOverlay");
   if(data.security && data.security.pinEnabled){
@@ -1409,6 +1745,7 @@ function checkLockOnStart(){
     overlay.classList.add("hidden");
     checkBackupReminder();
     checkStockAlertOnStart();
+    checkDepensesRecurrentesOnStart();
   }
 }
 
@@ -1419,6 +1756,8 @@ function attemptUnlock(){
     inp.value = "";
     checkBackupReminder();
     checkStockAlertOnStart();
+    checkDepensesRecurrentesOnStart();
+    startAutoLockTimer();
   } else {
     toast("Mot de passe incorrect.");
     inp.value = "";
@@ -1428,23 +1767,25 @@ function attemptUnlock(){
 
 function openSecuritySettings(){
   if(data.security && data.security.pinEnabled){
-    showModal("Sécurité", "Un mot de passe est actif. Laissez le champ vide et confirmez pour le désactiver, ou entrez-en un nouveau pour le remplacer.", {
+    showModal("Sécurité", "Un mot de passe est actif (redemandé automatiquement toutes les 2 heures). Laissez le champ vide et confirmez pour le désactiver, ou entrez-en un nouveau pour le remplacer.", {
       withInput:true, inputType:"password", placeholder:"Nouveau mot de passe (vide = désactiver)", confirmLabel:"Valider",
       onConfirm:(val)=>{
         if(val && val.trim().length>0){
           data.security.pin = val.trim();
           data.security.pinEnabled = true;
           toast("Mot de passe mis à jour.");
+          startAutoLockTimer();
         } else {
           data.security.pin = "";
           data.security.pinEnabled = false;
           toast("Protection par mot de passe désactivée.");
+          stopAutoLockTimer();
         }
         saveData();
       }
     });
   } else {
-    showModal("Activer la protection", "Définissez un mot de passe pour protéger l'accès à l'application.", {
+    showModal("Activer la protection", "Définissez un mot de passe pour protéger l'accès à l'application. Il sera redemandé automatiquement toutes les 2 heures.", {
       withInput:true, inputType:"password", placeholder:"Nouveau mot de passe", confirmLabel:"Activer",
       onConfirm:(val)=>{
         if(!val || val.trim().length===0){ toast("Mot de passe vide, non activé."); return; }
@@ -1452,6 +1793,7 @@ function openSecuritySettings(){
         data.security.pinEnabled = true;
         saveData();
         toast("Protection par mot de passe activée.");
+        startAutoLockTimer();
       }
     });
   }
