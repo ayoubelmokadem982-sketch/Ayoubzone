@@ -42,20 +42,32 @@
   header button:active{transform:scale(.95);}
 
   nav.tabs{
-    position:sticky; top:53px; z-index:19; display:flex; overflow-x:auto; background:#0b1220;
-    border-bottom:1px solid var(--border); padding:4px 6px; gap:4px; scrollbar-width:none;
-    transition:top .1s;
+    position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex;
+    background:#0b1220; border-top:1px solid var(--border); padding:4px 2px calc(4px + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -2px 12px rgba(0,0,0,.35);
   }
-  nav.tabs::-webkit-scrollbar{display:none;}
   nav.tabs button{
-    flex:0 0 auto; background:transparent; border:none; color:var(--text-dim); padding:10px 14px;
-    font-size:13px; font-weight:600; border-radius:10px; cursor:pointer; white-space:nowrap;
+    flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    background:transparent; border:none; color:var(--text-dim); padding:8px 2px;
+    font-size:10.5px; font-weight:600; border-radius:10px; cursor:pointer; white-space:nowrap;
   }
-  nav.tabs button.active{background:var(--accent); color:#04202e;}
+  nav.tabs button .nav-icon{ font-size:19px; line-height:1; }
+  nav.tabs button.active{ color:var(--accent); }
+  nav.tabs button.active .nav-icon{ transform:scale(1.08); }
 
-  main{padding:16px; max-width:900px; margin:0 auto;}
+  main{padding:16px 16px 90px; max-width:900px; margin:0 auto;}
   .card{background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px;}
   .card h2{margin:0 0 12px 0; font-size:16px;}
+  details.card{ padding:0; }
+  details.card summary{
+    list-style:none; cursor:pointer; padding:16px; margin:0; font-size:16px; font-weight:700;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  details.card summary::-webkit-details-marker{ display:none; }
+  details.card summary::after{ content:'▾'; font-size:13px; color:var(--text-dim); transition:transform .2s; margin-left:8px; }
+  details.card[open] summary::after{ transform:rotate(180deg); }
+  details.card summary::before{ content:none; }
+  details.card .details-body{ padding:0 16px 16px; }
   .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
   @media (max-width:520px){ .grid3{grid-template-columns:1fr;} }
@@ -86,7 +98,8 @@
   button.btn.small{padding:6px 10px; font-size:12px; margin-top:0;}
   button.btn:active{transform:scale(.97);}
 
-  table{width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;}
+  table{width:100%; border-collapse:collapse; font-size:14px; margin-top:8px;}
+  td.amount{ font-weight:700; font-size:14.5px; }
   th,td{padding:8px 6px; border-bottom:1px solid var(--border); text-align:left;}
   th{color:var(--text-dim); font-weight:600; font-size:11px; text-transform:uppercase;}
   .badge{padding:3px 8px; border-radius:20px; font-size:11px; font-weight:700;}
@@ -94,7 +107,13 @@
   .badge.pret{background:#38bdf833; color:#38bdf8;}
   .badge.recupere{background:#34d39933; color:#34d399;}
 
-  .station{border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--bg-card2);}
+  .station{border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--bg-card2); transition:box-shadow .3s, border-color .3s;}
+  .station.occupe-card{ border-color:var(--ps); box-shadow:0 0 0 1px var(--ps), 0 0 14px rgba(129,140,248,.35); }
+  @keyframes pulseGlow{
+    0%,100%{ box-shadow:0 0 0 1px var(--ps), 0 0 10px rgba(129,140,248,.3); }
+    50%{ box-shadow:0 0 0 1px var(--ps), 0 0 20px rgba(129,140,248,.6); }
+  }
+  .station.occupe-card{ animation:pulseGlow 2.2s ease-in-out infinite; }
   .station .top{display:flex; justify-content:space-between; align-items:center;}
   .station .timer{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ps);}
   .station .cost{font-size:14px; color:var(--text-dim);}
@@ -150,10 +169,32 @@
     body *{visibility:hidden;}
     #printArea, #printArea *{visibility:visible;}
     #printArea{display:block; position:absolute; top:0; left:0; width:100%; padding:20px; color:#000;}
+  }  #splashScreen{
+    position:fixed; inset:0; z-index:9999; background:linear-gradient(160deg,#0b1220,#151f38);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition:opacity .5s ease, visibility .5s ease;
   }
+  #splashScreen.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+  .splash-logo{ font-size:64px; animation:splashPop .6s ease; }
+  .splash-title{
+    margin-top:14px; font-size:28px; font-weight:800; letter-spacing:1px; color:var(--text);
+    animation:splashFadeUp .6s ease .15s both;
+  }
+  .splash-sub{
+    margin-top:6px; font-size:13px; color:var(--text-dim); letter-spacing:2px; text-transform:uppercase;
+    animation:splashFadeUp .6s ease .3s both;
+  }
+  @keyframes splashPop{ from{ transform:scale(.6); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  @keyframes splashFadeUp{ from{ transform:translateY(10px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
 </style>
 </head>
 <body>
+
+<div id="splashScreen">
+  <div class="splash-logo">🏪</div>
+  <div class="splash-title">Ayoub Zone</div>
+  <div class="splash-sub">Gestion Multi-Services</div>
+</div>
 
 <header>
   <h1>🏪 Magasin Multi-Services</h1>
@@ -178,11 +219,11 @@
 </div>
 
 <nav class="tabs" id="tabs">
-  <button data-tab="dashboard" class="active">📊 Dashboard</button>
-  <button data-tab="playstation">🎮 PlayStation</button>
-  <button data-tab="tasshilat">💳 Tasshilat</button>
-  <button data-tab="stock">🛒 Accessoires</button>
-  <button data-tab="reparations">🔧 Réparations</button>
+  <button data-tab="dashboard" class="active"><span class="nav-icon">📊</span>Dashboard</button>
+  <button data-tab="playstation"><span class="nav-icon">🎮</span>PlayStation</button>
+  <button data-tab="tasshilat"><span class="nav-icon">💳</span>Tasshilat</button>
+  <button data-tab="stock"><span class="nav-icon">🛒</span>Accessoires</button>
+  <button data-tab="reparations"><span class="nav-icon">🔧</span>Réparations</button>
 </nav>
 
 <main>
@@ -214,40 +255,57 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>⚠️ Vider une caisse (clôture)</h2>
-      <div class="row">
-        <button class="btn danger small" onclick="viderCaisse('playstation')">Vider PlayStation</button>
-        <button class="btn danger small" onclick="viderCaisse('tasshilat')">Vider Tasshilat</button>
-        <button class="btn danger small" onclick="viderCaisse('commerce')">Vider Commerce</button>
+    <details class="card">
+      <summary>⚠️ Vider une caisse (clôture)</summary>
+      <div class="details-body">
+        <div class="row">
+          <button class="btn danger small" onclick="viderCaisse('playstation')">Vider PlayStation</button>
+          <button class="btn danger small" onclick="viderCaisse('tasshilat')">Vider Tasshilat</button>
+          <button class="btn danger small" onclick="viderCaisse('commerce')">Vider Commerce</button>
+        </div>
       </div>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>📈 Revenus des 7 derniers jours</h2>
-      <div class="chart-wrap" id="chartWrap"></div>
-      <div class="row" style="margin-top:10px; font-size:11px; color:var(--text-dim);">
-        <span>🟣 PlayStation</span><span>🟡 Tasshilat</span><span>🟢 Commerce</span>
+    <details class="card">
+      <summary>📈 Revenus des 7 derniers jours</summary>
+      <div class="details-body">
+        <div class="chart-wrap" id="chartWrap"></div>
+        <div class="row" style="margin-top:10px; font-size:11px; color:var(--text-dim);">
+          <span>🟣 PlayStation</span><span>🟡 Tasshilat</span><span>🟢 Commerce</span>
+        </div>
       </div>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>📋 Clôture de journée</h2>
-      <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Génère un résumé des encaissements du jour avant de vider les caisses.</p>
-      <button class="btn secondary" onclick="genererRapportJour()">Générer le rapport du jour</button>
-      <div id="rapportJourBox" style="display:none; margin-top:12px; font-size:13px;"></div>
-    </div>
+    <details class="card">
+      <summary>📋 Clôture de journée</summary>
+      <div class="details-body">
+        <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Génère un résumé des encaissements du jour avant de vider les caisses.</p>
+        <button class="btn secondary" onclick="genererRapportJour()">Générer le rapport du jour</button>
+        <div id="rapportJourBox" style="display:none; margin-top:12px; font-size:13px;"></div>
+      </div>
+    </details>
 
-    <div class="card">
-      <h2>📊 Statistiques mensuelles</h2>
-      <div id="statsMensuellesBox" style="font-size:13px; line-height:1.7;"></div>
-    </div>
+    <details class="card">
+      <summary>📊 Statistiques mensuelles</summary>
+      <div class="details-body">
+        <div id="statsMensuellesBox" style="font-size:13px; line-height:1.7;"></div>
+      </div>
+    </details>
 
-    <div class="card">
-      <h2>📲 Installer l'application</h2>
-      <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Ajoutez une icône sur l'écran d'accueil pour ouvrir l'app comme une vraie application, sans le navigateur.</p>
-      <button class="btn secondary" id="installBtn" onclick="installerApp()">📲 Installer l'application</button>
-    </div>
+    <details class="card">
+      <summary>📆 Statistiques annuelles</summary>
+      <div class="details-body">
+        <div id="statsAnnuellesBox" style="font-size:13px; line-height:1.7;"></div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary>📲 Installer l'application</summary>
+      <div class="details-body">
+        <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Ajoutez une icône sur l'écran d'accueil pour ouvrir l'app comme une vraie application, sans le navigateur.</p>
+        <button class="btn secondary" id="installBtn" onclick="installerApp()">📲 Installer l'application</button>
+      </div>
+    </details>
   </section>
 
   <!-- PLAYSTATION -->
@@ -311,16 +369,19 @@
     <div class="card">
       <h2>🧾 Enregistrer une vente</h2>
       <label>Produit</label>
-      <select id="venteProduit" onchange="updateVenteTotal()"></select>
+      <select id="venteProduit" onchange="onProduitVenteChange()"></select>
       <div class="row">
+        <div><label>Prix de vente unitaire (DH)</label><input type="number" id="ventePrixUnitaire" oninput="updateVenteTotal()"></div>
         <div><label>Quantité</label><input type="number" id="venteQte" value="1" min="1" oninput="updateVenteTotal()"></div>
-        <div><label>Total à encaisser</label><div id="venteTotal" style="padding:10px 0; font-weight:700; font-size:18px;">0.00 DH</div></div>
       </div>
+      <label>Total à encaisser</label>
+      <div id="venteTotal" style="padding:6px 0; font-weight:700; font-size:18px;">0.00 DH</div>
       <button class="btn" onclick="enregistrerVente()">✅ Encaisser la vente</button>
+      <p style="font-size:11px; color:var(--text-dim); margin-top:6px;">Vous pouvez modifier le prix pour cette vente uniquement — le prix par défaut du produit ne change pas, sauf si vous le modifiez ci-dessous dans "Stock actuel".</p>
     </div>
 
     <div class="card">
-      <h2>Ajouter un produit</h2>
+      <h2>Ajouter / modifier un produit</h2>
 
       <label>Nom du produit</label>
       <input type="text" id="stockNom" placeholder="Ex: Câble USB-C">
@@ -330,7 +391,10 @@
       </div>
       <label>Quantité</label>
       <input type="number" id="stockQte" placeholder="Ex: 10">
-      <button class="btn" onclick="ajouterProduit()">Ajouter au stock</button>
+      <div class="row">
+        <button class="btn" id="btnAjouterProduit" onclick="ajouterProduit()">Ajouter au stock</button>
+        <button class="btn secondary" id="btnAnnulerEdition" style="display:none;" onclick="annulerEditionProduit()">Annuler</button>
+      </div>
     </div>
 
     <div class="card">
@@ -443,11 +507,12 @@ function fmt(n){
   return (Math.round((n||0)*100)/100).toFixed(2) + " DH";
 }
 
-function toast(msg){
+function toast(msg, duree){
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"), 2200);
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>t.classList.remove("show"), duree || 2200);
 }
 
 /* ---------- FENETRE DE CONFIRMATION PERSONNALISEE ----------
@@ -525,6 +590,8 @@ function renderDashboard(){
   const stockBas = document.getElementById("dashStockBas");
   if(stockBas) stockBas.textContent = data.stock.filter(p=>p.qte<=3).length;
   renderStatsMensuelles();
+  renderStatsAnnuelles();
+  renderChart7Jours();
 }
 
 function todayStartTs(){
@@ -727,8 +794,7 @@ function renderPlaystation(){
   data.psStations.forEach(st=>{
     const cout = calculerCout(st);
     const div = document.createElement("div");
-    div.className = "station";
-
+    div.className = "station" + (st.status==="occupe" ? " occupe-card" : "");
     const dureeInfo = (st.mode==="heure" && st.dureeMinutes)
       ? `<div class="cost">Durée réservée : ${st.dureeMinutes} min</div>` : "";
     const tempsEcoule = st.mode==="heure" && st.dureeMinutes && st.status==="occupe" &&
@@ -766,7 +832,7 @@ function renderPlaystation(){
   const body = document.getElementById("psHistoryBody");
   body.innerHTML = "";
   data.psHistory.slice(0,50).forEach(h=>{
-    body.innerHTML += `<tr><td>${h.date}</td><td>${h.poste}</td><td>${h.detail}</td><td>${fmt(h.montant)}</td><td><button class="btn small secondary" onclick="imprimerRecuPS('${h.id}')">🖨</button></td></tr>`;
+    body.innerHTML += `<tr><td>${h.date}</td><td>${h.poste}</td><td>${h.detail}</td><td class="amount">${fmt(h.montant)}</td><td><button class="btn small secondary" onclick="imprimerRecuPS('${h.id}')">🖨</button></td></tr>`;
   });
   document.getElementById("psHistoryEmpty").style.display = data.psHistory.length? "none":"block";
 
@@ -804,13 +870,13 @@ function tickPlaystationTimers(){
 }
 
 function declencherAlerteFinDeTemps(st){
-  toast("⏰ Temps écoulé pour "+st.nom+" !");
+  toast("⏰ Temps écoulé pour "+st.nom+" ! Merci de récupérer la manette / encaisser.", 8000);
   try{
     if("Notification" in window && Notification.permission === "granted"){
       new Notification("⏰ Temps écoulé", { body: "La session de " + st.nom + " est terminée." });
     }
   }catch(e){}
-  if(navigator.vibrate) navigator.vibrate([300,120,300,120,300]);
+  if(navigator.vibrate) navigator.vibrate([300,120,300,120,300,120,300,120,300]);
   jouerSonAlerte();
 }
 
@@ -831,7 +897,7 @@ function jouerSonAlerte(){
         o.stop(ctx.currentTime + 0.4);
       }, delay);
     };
-    beep(0); beep(500); beep(1000);
+    beep(0); beep(500); beep(1000); beep(2000); beep(2500); beep(3000);
   }catch(e){}
 }
 
@@ -899,26 +965,61 @@ function renderTasshilat(){
   const body = document.getElementById("tashHistoryBody");
   body.innerHTML = "";
   data.tashHistory.slice(0,50).forEach(h=>{
-    body.innerHTML += `<tr><td>${h.date}</td><td>${h.client}</td><td>${fmt(h.montant)}</td><td>${fmt(h.commission)}</td></tr>`;
+    body.innerHTML += `<tr><td>${h.date}</td><td>${h.client}</td><td class="amount">${fmt(h.montant)}</td><td class="amount">${fmt(h.commission)}</td></tr>`;
   });
   document.getElementById("tashHistoryEmpty").style.display = data.tashHistory.length? "none":"block";
 }
 
 /* ---------- STOCK / ACCESSOIRES ---------- */
+let editingProductId = null;
+
 function ajouterProduit(){
   const nom = document.getElementById("stockNom").value.trim();
   const prixAchat = parseFloat(document.getElementById("stockPrixAchat").value);
   const prixVente = parseFloat(document.getElementById("stockPrixVente").value);
   const qte = parseInt(document.getElementById("stockQte").value);
-  if(!nom || !prixAchat || !prixVente || !qte){ toast("Veuillez remplir tous les champs."); return; }
-  data.stock.push({id:uid(), nom, prixAchat, prixVente, qte});
+  if(!nom || isNaN(prixAchat) || isNaN(prixVente) || isNaN(qte)){ toast("Veuillez remplir tous les champs."); return; }
+
+  if(editingProductId){
+    const p = data.stock.find(x=>x.id===editingProductId);
+    if(p){
+      p.nom = nom; p.prixAchat = prixAchat; p.prixVente = prixVente; p.qte = qte;
+      toast("Produit modifié.");
+    }
+    annulerEditionProduit();
+  } else {
+    data.stock.push({id:uid(), nom, prixAchat, prixVente, qte});
+    toast("Produit ajouté.");
+  }
   document.getElementById("stockNom").value = "";
   document.getElementById("stockPrixAchat").value = "";
   document.getElementById("stockPrixVente").value = "";
   document.getElementById("stockQte").value = "";
   saveData();
   renderStock();
-  toast("Produit ajouté.");
+}
+
+function commencerEditionProduit(id){
+  const p = data.stock.find(x=>x.id===id);
+  if(!p) return;
+  editingProductId = id;
+  document.getElementById("stockNom").value = p.nom;
+  document.getElementById("stockPrixAchat").value = p.prixAchat;
+  document.getElementById("stockPrixVente").value = p.prixVente;
+  document.getElementById("stockQte").value = p.qte;
+  document.getElementById("btnAjouterProduit").textContent = "💾 Enregistrer les modifications";
+  document.getElementById("btnAnnulerEdition").style.display = "inline-block";
+  document.getElementById("stockNom").scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+function annulerEditionProduit(){
+  editingProductId = null;
+  document.getElementById("stockNom").value = "";
+  document.getElementById("stockPrixAchat").value = "";
+  document.getElementById("stockPrixVente").value = "";
+  document.getElementById("stockQte").value = "";
+  document.getElementById("btnAjouterProduit").textContent = "Ajouter au stock";
+  document.getElementById("btnAnnulerEdition").style.display = "none";
 }
 
 function renderVenteSelect(){
@@ -933,16 +1034,41 @@ function renderVenteSelect(){
     ).join("");
     if(prevVal && data.stock.some(p=>p.id===prevVal)) sel.value = prevVal;
   }
+  const prixInput = document.getElementById("ventePrixUnitaire");
+  if(prixInput && prixInput.value === ""){
+    onProduitVenteChange();
+  } else {
+    updateVenteTotal();
+  }
+}
+
+function onProduitVenteChange(){
+  const sel = document.getElementById("venteProduit");
+  const p = data.stock.find(x=>x.id===sel.value);
+  const prixInput = document.getElementById("ventePrixUnitaire");
+  if(p) prixInput.value = p.prixVente;
   updateVenteTotal();
 }
 
 function updateVenteTotal(){
-  const sel = document.getElementById("venteProduit");
   const totalEl = document.getElementById("venteTotal");
-  if(!sel || !totalEl) return;
-  const p = data.stock.find(x=>x.id===sel.value);
+  if(!totalEl) return;
+  const prixInput = document.getElementById("ventePrixUnitaire");
+  const prix = parseFloat(prixInput.value) || 0;
   const qte = parseInt(document.getElementById("venteQte").value) || 0;
-  totalEl.textContent = fmt(p ? p.prixVente*qte : 0);
+  totalEl.textContent = fmt(prix*qte);
+
+  const sel = document.getElementById("venteProduit");
+  const p = data.stock.find(x=>x.id===sel.value);
+  if(p && prix !== p.prixVente){
+    prixInput.style.background = "#fef3c7";
+    prixInput.style.color = "#78350f";
+    prixInput.style.borderColor = "var(--tash)";
+  } else {
+    prixInput.style.background = "";
+    prixInput.style.color = "";
+    prixInput.style.borderColor = "";
+  }
 }
 
 function enregistrerVente(){
@@ -950,22 +1076,34 @@ function enregistrerVente(){
   if(!sel.value){ toast("Aucun produit en stock à vendre."); return; }
   const p = data.stock.find(x=>x.id===sel.value);
   const qte = parseInt(document.getElementById("venteQte").value);
+  const prixUnitaire = parseFloat(document.getElementById("ventePrixUnitaire").value);
   if(!qte || qte<=0){ toast("Quantité invalide."); return; }
+  if(isNaN(prixUnitaire) || prixUnitaire<0){ toast("Prix de vente invalide."); return; }
   if(qte > p.qte){ toast("Stock insuffisant (disponible : "+p.qte+")."); return; }
   p.qte -= qte;
-  const montant = qte * p.prixVente;
-  const profit = qte * (p.prixVente - p.prixAchat);
+  const montant = qte * prixUnitaire;
+  const profit = qte * (prixUnitaire - p.prixAchat);
   data.caisses.commerce += montant;
   data.ventesHistory.unshift({
     id: uid(),
     date: new Date().toLocaleString('fr-FR'),
     ts: Date.now(),
-    produit: p.nom, qte, montant, profit
+    produit: p.nom, qte, montant, profit, prixUnitaire
   });
   saveData();
   document.getElementById("venteQte").value = "1";
+  document.getElementById("ventePrixUnitaire").value = p.prixVente;
   renderAll();
-  toast("Vente enregistrée : "+fmt(montant)+" (bénéfice : "+fmt(profit)+")");
+  if(p.qte <= 3){
+    toast("Vente enregistrée : "+fmt(montant)+" (bénéfice : "+fmt(profit)+") — ⚠️ Stock faible pour "+p.nom+" ("+p.qte+" restant(s))", 5000);
+    try{
+      if("Notification" in window && Notification.permission === "granted"){
+        new Notification("⚠️ Stock faible", { body: p.nom + " : il ne reste que " + p.qte + " unité(s)." });
+      }
+    }catch(e){}
+  } else {
+    toast("Vente enregistrée : "+fmt(montant)+" (bénéfice : "+fmt(profit)+")");
+  }
 }
 
 function supprimerProduit(id){
@@ -973,6 +1111,7 @@ function supprimerProduit(id){
     confirmLabel:"Supprimer",
     onConfirm:()=>{
       data.stock = data.stock.filter(p=>p.id!==id);
+      if(editingProductId === id) annulerEditionProduit();
       saveData();
       renderStock();
     }
@@ -987,8 +1126,8 @@ function renderStock(){
   data.stock.forEach(p=>{
     const bas = p.qte <= SEUIL_BAS;
     body.innerHTML += `<tr${bas ? ' style="color:var(--danger);"' : ''}>
-      <td>${p.nom}${bas ? ' ⚠️' : ''}</td><td>${fmt(p.prixAchat)}</td><td>${fmt(p.prixVente)}</td><td>${p.qte}</td>
-      <td><button class="btn small danger" onclick="supprimerProduit('${p.id}')">🗑</button></td>
+      <td>${p.nom}${bas ? ' ⚠️' : ''}</td><td class="amount">${fmt(p.prixAchat)}</td><td class="amount">${fmt(p.prixVente)}</td><td>${p.qte}</td>
+      <td><button class="btn small secondary" onclick="commencerEditionProduit('${p.id}')">✏️</button> <button class="btn small danger" onclick="supprimerProduit('${p.id}')">🗑</button></td>
     </tr>`;
   });
   document.getElementById("stockEmpty").style.display = data.stock.length? "none":"block";
@@ -999,7 +1138,7 @@ function renderStock(){
   const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
   const filtered = q ? data.ventesHistory.filter(v=>v.produit.toLowerCase().includes(q)) : data.ventesHistory;
   filtered.slice(0,50).forEach(v=>{
-    histBody.innerHTML += `<tr><td>${v.date}</td><td>${v.produit}</td><td>${v.qte}</td><td>${fmt(v.montant)}</td><td>${fmt(v.profit)}</td><td><button class="btn small secondary" onclick="imprimerRecuVente('${v.id}')">🖨</button></td></tr>`;
+    histBody.innerHTML += `<tr><td>${v.date}</td><td>${v.produit}</td><td>${v.qte}</td><td class="amount">${fmt(v.montant)}</td><td class="amount">${fmt(v.profit)}</td><td><button class="btn small secondary" onclick="imprimerRecuVente('${v.id}')">🖨</button></td></tr>`;
   });
   document.getElementById("venteHistoryEmpty").style.display = filtered.length? "none":"block";
 }
@@ -1143,18 +1282,8 @@ function updateClock(){
   const dateStr = now.toLocaleDateString('fr-FR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const timeStr = now.toLocaleTimeString('fr-FR');
   el.textContent = dateStr + " — " + timeStr;
-  adjustStickyOffsets();
-}
-
-function adjustStickyOffsets(){
-  const header = document.querySelector('header');
-  const nav = document.querySelector('nav.tabs');
-  if(header && nav){
-    nav.style.top = header.offsetHeight + "px";
-  }
 }
 setInterval(updateClock, 1000);
-window.addEventListener('resize', adjustStickyOffsets);
 
 /* ---------- IMPRESSION DE REÇUS ---------- */
 function printReceipt(title, lines){
@@ -1228,6 +1357,18 @@ function demanderPermissionNotif(){
   });
 }
 
+/* ---------- RAPPEL DE STOCK FAIBLE AU DÉMARRAGE ---------- */
+function checkStockAlertOnStart(){
+  const bas = data.stock.filter(p=>p.qte<=3);
+  if(bas.length>0){
+    setTimeout(()=>{
+      const liste = bas.slice(0,3).map(p=>p.nom+" ("+p.qte+")").join(", ");
+      const suite = bas.length>3 ? " et "+(bas.length-3)+" autre(s)" : "";
+      toast("⚠️ Stock faible : "+liste+suite, 5000);
+    }, 2800);
+  }
+}
+
 /* ---------- RAPPEL DE SAUVEGARDE HEBDOMADAIRE ---------- */
 function checkBackupReminder(){
   const seuil = 7*24*60*60*1000; // 7 jours
@@ -1267,6 +1408,7 @@ function checkLockOnStart(){
   } else {
     overlay.classList.add("hidden");
     checkBackupReminder();
+    checkStockAlertOnStart();
   }
 }
 
@@ -1276,6 +1418,7 @@ function attemptUnlock(){
     document.getElementById("lockOverlay").classList.add("hidden");
     inp.value = "";
     checkBackupReminder();
+    checkStockAlertOnStart();
   } else {
     toast("Mot de passe incorrect.");
     inp.value = "";
@@ -1315,6 +1458,47 @@ function openSecuritySettings(){
 }
 
 /* ---------- STATISTIQUES MENSUELLES ---------- */
+/* ---------- GRAPHIQUE 7 DERNIERS JOURS ---------- */
+function renderChart7Jours(){
+  const box = document.getElementById("chartWrap");
+  if(!box) return;
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate()-i);
+    days.push(d);
+  }
+  const data7 = days.map(d=>{
+    const start = d.getTime();
+    const end = start + 24*3600*1000;
+    let ps=0, tash=0, com=0;
+    data.psHistory.forEach(h=>{ if(h.ts>=start && h.ts<end) ps+=h.montant; });
+    data.tashHistory.forEach(h=>{ if(h.ts>=start && h.ts<end) tash+=h.commission; });
+    data.ventesHistory.forEach(v=>{ if(v.ts>=start && v.ts<end) com+=v.montant; });
+    data.reparations.forEach(r=>{
+      if(r.ts>=start && r.ts<end) com+=r.acompte;
+      if(r.montantFinal && r.recupTs>=start && r.recupTs<end) com+=r.montantFinal;
+    });
+    return {d, ps, tash, com};
+  });
+  const maxVal = Math.max(1, ...data7.map(x=>Math.max(x.ps, x.tash, x.com)));
+  box.innerHTML = data7.map(x=>{
+    const hPs = Math.round((x.ps/maxVal)*100);
+    const hTash = Math.round((x.tash/maxVal)*100);
+    const hCom = Math.round((x.com/maxVal)*100);
+    const lbl = x.d.toLocaleDateString('fr-FR', {weekday:'short'});
+    return `<div class="chart-day">
+      <div class="chart-bars">
+        <div class="chart-bar" style="height:${hPs}%; background:var(--ps);" title="PlayStation : ${fmt(x.ps)}"></div>
+        <div class="chart-bar" style="height:${hTash}%; background:var(--tash);" title="Tasshilat : ${fmt(x.tash)}"></div>
+        <div class="chart-bar" style="height:${hCom}%; background:var(--com);" title="Commerce : ${fmt(x.com)}"></div>
+      </div>
+      <div class="lbl">${lbl}</div>
+    </div>`;
+  }).join("");
+}
+
 function monthRange(offsetMonths){
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth()+offsetMonths, 1, 0,0,0,0);
@@ -1383,6 +1567,64 @@ function renderStatsMensuelles(){
   `;
 }
 
+/* ---------- STATISTIQUES ANNUELLES ---------- */
+function yearRange(offsetYears){
+  const now = new Date();
+  const start = new Date(now.getFullYear()+offsetYears, 0, 1, 0,0,0,0);
+  const end = new Date(now.getFullYear()+offsetYears+1, 0, 1, 0,0,0,0);
+  return {start:start.getTime(), end:end.getTime()};
+}
+
+function monthKey(ts){
+  const d = new Date(ts);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+}
+
+function collecterRevenusParMois(startTs, endTs){
+  const map = {};
+  const addTo = (ts, montant)=>{
+    if(ts==null || ts<startTs || ts>=endTs || !montant) return;
+    const k = monthKey(ts);
+    map[k] = (map[k]||0) + montant;
+  };
+  data.psHistory.forEach(h=>addTo(h.ts, h.montant));
+  data.tashHistory.forEach(h=>addTo(h.ts, h.commission));
+  data.ventesHistory.forEach(v=>addTo(v.ts, v.montant));
+  data.reparations.forEach(r=>{
+    addTo(r.ts, r.acompte);
+    if(r.montantFinal) addTo(r.recupTs, r.montantFinal);
+  });
+  return map;
+}
+
+function renderStatsAnnuelles(){
+  const box = document.getElementById("statsAnnuellesBox");
+  if(!box) return;
+  const cur = yearRange(0);
+  const prev = yearRange(-1);
+  const moisMap = collecterRevenusParMois(cur.start, cur.end);
+  let bestMonth=null, bestVal=0;
+  Object.entries(moisMap).forEach(([m,v])=>{ if(v>bestVal){ bestMonth=m; bestVal=v; } });
+  const totalCur = Object.values(moisMap).reduce((s,v)=>s+v,0);
+  const totalPrev = Object.values(collecterRevenusParMois(prev.start, prev.end)).reduce((s,v)=>s+v,0);
+  const topProduit = produitLePlusVendu(cur.start, cur.end);
+  const diffPct = totalPrev>0 ? (((totalCur-totalPrev)/totalPrev)*100) : (totalCur>0?100:0);
+  const anneeCur = new Date().getFullYear();
+  let bestMonthLabel = "—";
+  if(bestMonth){
+    const [y,m] = bestMonth.split("-").map(Number);
+    bestMonthLabel = new Date(y, m-1, 1).toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
+  }
+
+  box.innerHTML = `
+    <p style="margin:4px 0;">📆 <strong>Année ${anneeCur}</strong></p>
+    <p style="margin:4px 0;">💰 Revenu total de l'année : <strong>${fmt(totalCur)}</strong></p>
+    <p style="margin:4px 0;">📈 Vs année dernière (${fmt(totalPrev)}) : <strong style="color:${diffPct>=0?'var(--com)':'var(--danger)'}">${diffPct>=0?'+':''}${diffPct.toFixed(1)}%</strong></p>
+    <p style="margin:4px 0;">🏆 Meilleur mois : <strong>${bestMonthLabel}</strong>${bestMonth?(' ('+fmt(bestVal)+')'):''}</p>
+    <p style="margin:4px 0;">🛒 Produit le plus vendu (année) : <strong>${topProduit ? topProduit.nom+' ('+topProduit.qte+' unités)' : '—'}</strong></p>
+  `;
+}
+
 /* ---------- INSTALLATION COMME APPLICATION (PWA) ---------- */
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
@@ -1417,6 +1659,11 @@ function renderAll(){
 applyTheme();
 checkLockOnStart();
 renderAll();
+
+setTimeout(()=>{
+  const splash = document.getElementById("splashScreen");
+  if(splash) splash.classList.add("hide");
+}, 1100);
 </script>
 </body>
 </html>
