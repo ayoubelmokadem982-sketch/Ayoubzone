@@ -244,14 +244,17 @@
     </div>
 
     <div class="card">
-      <h2>💸 Enregistrer une dépense (sortie de caisse)</h2>
-      <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Achat de stock, facture, réparation de matériel... tout argent qui sort d'une caisse.</p>
-      <label>Depuis quelle caisse ?</label>
+      <h2>💸 Suivi des dépenses (séparé des caisses)</h2>
+      <div class="caisse-box" style="background:var(--danger); color:#3a0a0a; margin-bottom:12px;">
+        <small style="opacity:.8;">Total des dépenses enregistrées</small>
+        <div class="val" id="depensesTotalGlobal">0 DH</div>
+      </div>
+      <label>Catégorie (pour information uniquement)</label>
       <select id="depenseCaisse">
         <option value="commerce">🛒 Commerce & Réparations</option>
         <option value="playstation">🎮 PlayStation</option>
         <option value="tasshilat">💳 Tasshilat</option>
-        <option value="general">💰 Total général (toutes les caisses)</option>
+        <option value="general">💰 Général / Non catégorisé</option>
       </select>
       <div class="row">
         <div><label>Montant (DH)</label><input type="number" id="depenseMontant" placeholder="Ex: 200"></div>
@@ -269,7 +272,6 @@
     <details class="card">
       <summary>🔁 Dépenses récurrentes mensuelles</summary>
       <div class="details-body">
-        <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Loyer, électricité, internet... définissez-les une fois, l'app vous rappelle chaque mois.</p>
         <label>Nom</label>
         <input type="text" id="recNom" placeholder="Ex: Loyer">
         <div class="row">
@@ -279,7 +281,7 @@
               <option value="commerce">🛒 Commerce</option>
               <option value="playstation">🎮 PlayStation</option>
               <option value="tasshilat">💳 Tasshilat</option>
-              <option value="general">💰 Total général</option>
+              <option value="general">💰 Général / Non catégorisé</option>
             </select>
           </div>
         </div>
@@ -324,7 +326,6 @@
     <details class="card">
       <summary>📋 Clôture de journée</summary>
       <div class="details-body">
-        <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Génère un résumé des encaissements du jour avant de vider les caisses.</p>
         <button class="btn secondary" onclick="genererRapportJour()">Générer le rapport du jour</button>
         <div id="rapportJourBox" style="display:none; margin-top:12px; font-size:13px;"></div>
       </div>
@@ -347,7 +348,6 @@
     <details class="card">
       <summary>📲 Installer l'application</summary>
       <div class="details-body">
-        <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Ajoutez une icône sur l'écran d'accueil pour ouvrir l'app comme une vraie application, sans le navigateur.</p>
         <button class="btn secondary" id="installBtn" onclick="installerApp()">📲 Installer l'application</button>
       </div>
     </details>
@@ -438,6 +438,14 @@
         <div><label>Prix d'achat (DH)</label><input type="number" id="reapproPrixAchat"></div>
         <div><label>Prix de vente (DH)</label><input type="number" id="reapproPrixVente"></div>
       </div>
+      <label>Payé depuis quelle caisse ?</label>
+      <select id="reapproPaiementCaisse">
+        <option value="commerce">🛒 Commerce</option>
+        <option value="playstation">🎮 PlayStation</option>
+        <option value="tasshilat">💳 Tasshilat</option>
+        <option value="general">💰 Général / Non catégorisé</option>
+        <option value="aucune">— Ne pas décompter (déjà payé ailleurs) —</option>
+      </select>
       <button class="btn secondary" onclick="reapprovisionnerProduit()">🔄 Réapprovisionner</button>
     </div>
 
@@ -452,6 +460,14 @@
       </div>
       <label>Quantité</label>
       <input type="number" id="stockQte" placeholder="Ex: 10">
+      <label>Payé depuis quelle caisse ?</label>
+      <select id="stockPaiementCaisse">
+        <option value="commerce">🛒 Commerce</option>
+        <option value="playstation">🎮 PlayStation</option>
+        <option value="tasshilat">💳 Tasshilat</option>
+        <option value="general">💰 Général / Non catégorisé</option>
+        <option value="aucune">— Ne pas décompter (déjà payé ailleurs) —</option>
+      </select>
       <div class="row">
         <button class="btn" id="btnAjouterProduit" onclick="ajouterProduit()">Ajouter au stock</button>
         <button class="btn secondary" id="btnAnnulerEdition" style="display:none;" onclick="annulerEditionProduit()">Annuler</button>
@@ -699,87 +715,39 @@ function genererRapportJour(){
 }
 
 /* ---------- DEPENSES (SORTIES DE CAISSE) ---------- */
-function deduireDuTotalGeneral(montant){
-  const total = data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce;
-  let parts;
-  if(total <= 0){
-    const part = montant/3;
-    parts = {playstation:part, tasshilat:part, commerce:part};
-  } else {
-    parts = {
-      playstation: montant * (data.caisses.playstation/total),
-      tasshilat: montant * (data.caisses.tasshilat/total),
-      commerce: montant * (data.caisses.commerce/total)
-    };
-  }
-  data.caisses.playstation -= parts.playstation;
-  data.caisses.tasshilat -= parts.tasshilat;
-  data.caisses.commerce -= parts.commerce;
-  return parts;
-}
-
 function enregistrerDepense(){
   const caisse = document.getElementById("depenseCaisse").value;
   const montant = parseFloat(document.getElementById("depenseMontant").value);
   const motif = document.getElementById("depenseMotif").value.trim();
   if(!montant || montant<=0){ toast("Montant invalide."); return; }
   if(!motif){ toast("Veuillez indiquer un motif."); return; }
-  const soldeActuel = (caisse === 'general')
-    ? (data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce)
-    : data.caisses[caisse];
-  const finaliser = ()=>{
-    let repartition = null;
-    if(caisse === 'general'){
-      repartition = deduireDuTotalGeneral(montant);
-    } else {
-      data.caisses[caisse] -= montant;
-    }
-    data.depenses.unshift({
-      id: uid(),
-      date: new Date().toLocaleString('fr-FR'),
-      ts: Date.now(),
-      caisse, montant, motif, repartition
-    });
-    document.getElementById("depenseMontant").value = "";
-    document.getElementById("depenseMotif").value = "";
-    saveData();
-    renderAll();
-    toast("Dépense enregistrée : -"+fmt(montant));
-  };
-  if(montant > soldeActuel){
-    const label = caisse === 'general' ? "du total général" : "de cette caisse";
-    showModal("Solde insuffisant", "⚠️ Le solde "+label+" ("+fmt(soldeActuel)+") est inférieur à la dépense de "+fmt(montant)+". Continuer quand même (passage en négatif) ?", {
-      confirmLabel:"Continuer",
-      onConfirm: finaliser
-    });
-    return;
-  }
-  finaliser();
+
+  data.depenses.unshift({
+    id: uid(),
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    caisse, montant, motif
+  });
+  document.getElementById("depenseMontant").value = "";
+  document.getElementById("depenseMotif").value = "";
+  saveData();
+  renderAll();
+  toast("Dépense enregistrée : -"+fmt(montant)+" (n'affecte pas les caisses)");
 }
 
 function supprimerDepense(id){
-  showModal("Supprimer la dépense", "Annuler cette dépense ? Le montant sera recrédité.", {
-    confirmLabel:"Annuler la dépense",
+  showModal("Supprimer la dépense", "Supprimer cette dépense de l'historique ?", {
+    confirmLabel:"Supprimer",
     onConfirm:()=>{
-      const dep = data.depenses.find(d=>d.id===id);
-      if(dep){
-        if(dep.caisse === 'general' && dep.repartition){
-          data.caisses.playstation += dep.repartition.playstation;
-          data.caisses.tasshilat += dep.repartition.tasshilat;
-          data.caisses.commerce += dep.repartition.commerce;
-        } else {
-          data.caisses[dep.caisse] += dep.montant;
-        }
-        data.depenses = data.depenses.filter(d=>d.id!==id);
-        saveData();
-        renderAll();
-        toast("Dépense annulée, montant recrédité.");
-      }
+      data.depenses = data.depenses.filter(d=>d.id!==id);
+      saveData();
+      renderAll();
+      toast("Dépense supprimée.");
     }
   });
 }
 
-const NOMS_CAISSES = { playstation:"🎮 PlayStation", tasshilat:"💳 Tasshilat", commerce:"🛒 Commerce", general:"💰 Total général" };
+const NOMS_CAISSES = { playstation:"🎮 PlayStation", tasshilat:"💳 Tasshilat", commerce:"🛒 Commerce", general:"💰 Général" };
 
 /* ---------- DEPENSES RECURRENTES MENSUELLES ---------- */
 function currentMonthKey(){
@@ -815,36 +783,16 @@ function payerDepenseRecurrente(id){
   const r = data.depensesRecurrentes.find(x=>x.id===id);
   if(!r) return;
   const mk = currentMonthKey();
-  const soldeActuel = (r.caisse === 'general')
-    ? (data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce)
-    : data.caisses[r.caisse];
-  const finaliser = ()=>{
-    let repartition = null;
-    if(r.caisse === 'general'){
-      repartition = deduireDuTotalGeneral(r.montant);
-    } else {
-      data.caisses[r.caisse] -= r.montant;
-    }
-    data.depenses.unshift({
-      id: uid(),
-      date: new Date().toLocaleString('fr-FR'),
-      ts: Date.now(),
-      caisse: r.caisse, montant: r.montant, motif: r.nom + " (récurrent)", repartition
-    });
-    r.lastPaidMonth = mk;
-    saveData();
-    renderAll();
-    toast(r.nom + " marqué payé pour ce mois.");
-  };
-  if(r.montant > soldeActuel){
-    const label = r.caisse === 'general' ? "du total général" : "de la caisse "+(NOMS_CAISSES[r.caisse]||r.caisse);
-    showModal("Solde insuffisant", "⚠️ Le solde "+label+" ("+fmt(soldeActuel)+") est inférieur à "+fmt(r.montant)+". Continuer quand même ?", {
-      confirmLabel:"Continuer",
-      onConfirm: finaliser
-    });
-    return;
-  }
-  finaliser();
+  data.depenses.unshift({
+    id: uid(),
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    caisse: r.caisse, montant: r.montant, motif: r.nom + " (récurrent)"
+  });
+  r.lastPaidMonth = mk;
+  saveData();
+  renderAll();
+  toast(r.nom + " marqué payé pour ce mois (n'affecte pas les caisses).");
 }
 
 function renderDepensesRecurrentes(){
@@ -895,6 +843,12 @@ function renderDepenses(){
   });
   const emptyEl = document.getElementById("depensesEmpty");
   if(emptyEl) emptyEl.style.display = data.depenses.length? "none":"block";
+
+  const totalEl = document.getElementById("depensesTotalGlobal");
+  if(totalEl){
+    const total = data.depenses.reduce((s,d)=>s+d.montant, 0);
+    totalEl.textContent = fmt(total);
+  }
 }
 
 function viderCaisse(type){
@@ -937,6 +891,14 @@ function supprimerStation(id){
 function changerMode(id, mode){
   const st = data.psStations.find(s=>s.id===id);
   st.mode = mode;
+  // Le mode "match" n'a pas d'état occupé/chrono : on repart toujours propre.
+  if(mode === "match" || st.status === "occupe"){
+    st.status = "libre";
+    st.startTime = null;
+    st.matchCount = 0;
+    st.dureeMinutes = null;
+    st.notifie = false;
+  }
   saveData();
   renderPlaystation();
 }
@@ -978,19 +940,26 @@ function demarrerStation(id){
   }
 }
 
-function ajouterMatch(id){
+function encaisserMatchDirect(id){
   const st = data.psStations.find(s=>s.id===id);
-  showModal("Ajouter des matchs — "+st.nom, "Combien de matchs ont été joués ? (tarif : "+fmt(st.tarifMatch)+" / match)", {
-    withInput:true, inputType:"number", inputValue:"1", confirmLabel:"Ajouter",
-    onConfirm:(val)=>{
-      const n = parseInt(val);
-      if(!n || n<=0) return;
-      st.matchCount += n;
-      saveData();
-      renderPlaystation();
-      toast(n+" match(s) ajouté(s) — "+fmt(n*st.tarifMatch));
-    }
+  if(!st) return;
+  const qteInput = document.getElementById("matchQte-"+id);
+  const qte = parseInt(qteInput.value);
+  if(!qte || qte<=0){ toast("Veuillez indiquer le nombre de matchs."); return; }
+  const montant = qte * st.tarifMatch;
+  data.caisses.playstation += montant;
+  data.psHistory.unshift({
+    id: uid(),
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    poste: st.nom,
+    detail: qte+" match(s)",
+    montant
   });
+  qteInput.value = "";
+  saveData();
+  renderAll();
+  toast("Encaissé : "+fmt(montant)+" ("+qte+" match(s))");
 }
 
 function calculerCout(st){
@@ -1061,8 +1030,32 @@ function renderPlaystation(){
   const box = document.getElementById("stationsList");
   box.innerHTML = "";
   data.psStations.forEach(st=>{
-    const cout = calculerCout(st);
     const div = document.createElement("div");
+
+    if(st.mode === "match"){
+      div.className = "station";
+      div.innerHTML = `
+        <div class="top">
+          <strong>${st.nom}</strong>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <select onchange="changerMode('${st.id}', this.value)">
+            <option value="heure">Tarif à l'heure</option>
+            <option value="match" selected>Tarif au match</option>
+          </select>
+        </div>
+        <div><label>Tarif par match (DH)</label><input type="number" value="${st.tarifMatch}" onchange="majTarif('${st.id}','tarifMatch',this.value)"></div>
+        <div style="margin-top:8px;"><label>Nombre de matchs joués</label><input type="number" id="matchQte-${st.id}" placeholder="Ex: 3" min="1"></div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn small" onclick="encaisserMatchDirect('${st.id}')">➕ Ajouter & Encaisser</button>
+          <button class="btn small danger" onclick="supprimerStation('${st.id}')">🗑</button>
+        </div>
+      `;
+      box.appendChild(div);
+      return;
+    }
+
+    const cout = calculerCout(st);
     div.className = "station" + (st.status==="occupe" ? " occupe-card" : "");
     const dureeInfo = (st.mode==="heure" && st.dureeMinutes)
       ? `<div class="cost">Durée réservée : ${st.dureeMinutes} min</div>` : "";
@@ -1089,7 +1082,6 @@ function renderPlaystation(){
       </div>
       <div class="row" style="margin-top:8px;">
         ${st.status==="libre" ? `<button class="btn small" onclick="demarrerStation('${st.id}')">▶ Démarrer</button>` : ""}
-        ${st.status==="occupe" && st.mode==="match" ? `<button class="btn small secondary" onclick="ajouterMatch('${st.id}')">🎮 Saisir matchs joués</button>` : ""}
         ${st.status==="occupe" ? `<button class="btn small danger" onclick="arreterSansEncaisser('${st.id}')">✖ Arrêter (sans encaisser)</button>` : ""}
         ${st.status==="occupe" ? `<button class="btn small" onclick="terminerEtEncaisser('${st.id}')">⏹ Terminer & Encaisser</button>` : ""}
         <button class="btn small danger" onclick="supprimerStation('${st.id}')">🗑</button>
@@ -1269,26 +1261,50 @@ function reapprovisionnerProduit(){
   if(!qteAjoutee || qteAjoutee<=0){ toast("Veuillez indiquer la quantité reçue."); return; }
   if(isNaN(prixAchat) || isNaN(prixVente)){ toast("Prix invalide."); return; }
 
-  const memePrixAchat = Math.round(prixAchat*100) === Math.round(p.prixAchat*100);
+  const finirReappro = (depId)=>{
+    const coutDeduit = !!depId;
+    const memePrixAchat = Math.round(prixAchat*100) === Math.round(p.prixAchat*100);
+    const suffixe = coutDeduit ? " — "+fmt(prixAchat*qteAjoutee)+" enregistrés en dépense." : "";
 
-  if(memePrixAchat){
-    // Même prix d'achat que le lot existant : fusion normale (le prix de vente peut être ajusté)
-    p.qte += qteAjoutee;
-    p.prixVente = prixVente;
-    toast("Stock mis à jour : "+p.nom+" (+"+qteAjoutee+", total "+p.qte+")");
-  } else {
-    // Prix d'achat différent : on crée un nouveau lot séparé pour ne jamais fausser le coût réel
-    // d'un lot précédent (ex: 1er arrivage à 10 DH, 2e arrivage à 20 DH doivent rester distincts).
-    data.stock.push({id:uid(), nom:p.nom, prixAchat, prixVente, qte:qteAjoutee});
-    toast("Prix d'achat différent : un nouveau lot séparé a été créé pour "+p.nom+" (pour préserver le coût réel de chaque dépôt).", 5000);
-  }
+    if(memePrixAchat){
+      // Même prix d'achat que le lot existant : fusion normale (le prix de vente peut être ajusté)
+      p.qte += qteAjoutee;
+      p.prixVente = prixVente;
+      if(depId){
+        p.depenseIds = p.depenseIds || [];
+        p.depenseIds.push(depId);
+      }
+      toast("Stock mis à jour : "+p.nom+" (+"+qteAjoutee+", total "+p.qte+")"+suffixe);
+    } else {
+      // Prix d'achat différent : on crée un nouveau lot séparé pour ne jamais fausser le coût réel
+      // d'un lot précédent (ex: 1er arrivage à 10 DH, 2e arrivage à 20 DH doivent rester distincts).
+      data.stock.push({id:uid(), nom:p.nom, prixAchat, prixVente, qte:qteAjoutee, depenseIds: depId?[depId]:[]});
+      toast("Nouveau lot séparé créé pour "+p.nom+" (prix d'achat différent)."+suffixe, 5000);
+    }
 
-  document.getElementById("reapproQte").value = "";
-  document.getElementById("reapproPrixAchat").value = "";
-  document.getElementById("reapproPrixVente").value = "";
-  sel.value = "";
-  saveData();
-  renderStock();
+    document.getElementById("reapproQte").value = "";
+    document.getElementById("reapproPrixAchat").value = "";
+    document.getElementById("reapproPrixVente").value = "";
+    sel.value = "";
+    saveData();
+    renderAll();
+  };
+
+  const caisseChoisie = document.getElementById("reapproPaiementCaisse").value;
+  const coutTotal = prixAchat * qteAjoutee;
+  payerAchatStock(caisseChoisie, coutTotal, "Réapprovisionnement : "+p.nom, finirReappro);
+}
+
+function payerAchatStock(caisseChoisie, montant, motif, callback){
+  if(caisseChoisie === 'aucune' || !montant || montant<=0){ callback(null); return; }
+  const depId = uid();
+  data.depenses.unshift({
+    id: depId,
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    caisse: caisseChoisie, montant, motif
+  });
+  callback(depId);
 }
 
 function ajouterProduit(){
@@ -1298,23 +1314,53 @@ function ajouterProduit(){
   const qte = parseInt(document.getElementById("stockQte").value);
   if(!nom || isNaN(prixAchat) || isNaN(prixVente) || isNaN(qte)){ toast("Veuillez remplir tous les champs."); return; }
 
-  if(editingProductId){
-    const p = data.stock.find(x=>x.id===editingProductId);
-    if(p){
-      p.nom = nom; p.prixAchat = prixAchat; p.prixVente = prixVente; p.qte = qte;
-      toast("Produit modifié.");
+  const finirAjout = (depId)=>{
+    if(editingProductId){
+      const p = data.stock.find(x=>x.id===editingProductId);
+      if(p){
+        p.nom = nom; p.prixAchat = prixAchat; p.prixVente = prixVente; p.qte = qte;
+
+        // Si ce produit a une dépense d'achat liée (créée à l'ajout ou au réapprovisionnement),
+        // on corrige son montant pour refléter le prix/quantité corrigés — utile en cas d'erreur de saisie initiale.
+        const liees = (p.depenseIds||[]).map(did=>data.depenses.find(d=>d.id===did)).filter(Boolean);
+        if(liees.length === 1){
+          const dep = liees[0];
+          const nouveauMontant = prixAchat * qte;
+          if(Math.round(dep.montant*100) !== Math.round(nouveauMontant*100)){
+            dep.montant = nouveauMontant;
+            dep.motif = "Achat stock : "+nom+" (corrigé)";
+            toast("Produit modifié — dépense liée corrigée à "+fmt(nouveauMontant)+".");
+          } else {
+            toast("Produit modifié.");
+          }
+        } else if(liees.length > 1){
+          toast("Produit modifié. Plusieurs dépenses sont liées à ce produit — corrigez-les manuellement si besoin.", 5000);
+        } else {
+          toast("Produit modifié.");
+        }
+      }
+      annulerEditionProduit();
+    } else {
+      data.stock.push({id:uid(), nom, prixAchat, prixVente, qte, depenseIds: depId?[depId]:[]});
+      toast("Produit ajouté."+(depId ? " "+fmt(prixAchat*qte)+" enregistrés en dépense." : ""));
     }
-    annulerEditionProduit();
+    document.getElementById("stockNom").value = "";
+    document.getElementById("stockPrixAchat").value = "";
+    document.getElementById("stockPrixVente").value = "";
+    document.getElementById("stockQte").value = "";
+    saveData();
+    renderAll();
+  };
+
+  if(editingProductId){
+    // Correction d'une fiche existante : pas de nouvel achat déduit, seulement une éventuelle
+    // correction de la dépense déjà liée (voir finirAjout).
+    finirAjout(null);
   } else {
-    data.stock.push({id:uid(), nom, prixAchat, prixVente, qte});
-    toast("Produit ajouté.");
+    const caisseChoisie = document.getElementById("stockPaiementCaisse").value;
+    const coutTotal = prixAchat * qte;
+    payerAchatStock(caisseChoisie, coutTotal, "Achat stock : "+nom, finirAjout);
   }
-  document.getElementById("stockNom").value = "";
-  document.getElementById("stockPrixAchat").value = "";
-  document.getElementById("stockPrixVente").value = "";
-  document.getElementById("stockQte").value = "";
-  saveData();
-  renderStock();
 }
 
 function commencerEditionProduit(id){
