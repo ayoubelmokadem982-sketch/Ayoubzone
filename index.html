@@ -303,9 +303,10 @@
     </div>
 
     <details class="card">
-      <summary>⚠️ Vider une caisse (clôture)</summary>
+      <summary>⚠️ Vider une caisse / Clôturer la journée</summary>
       <div class="details-body">
-        <div class="row">
+        <button class="btn danger" style="width:100%;" onclick="cloturerLaJournee()">🌙 La journée est terminée (vider les 3 caisses)</button>
+        <div class="row" style="margin-top:10px;">
           <button class="btn danger small" onclick="viderCaisse('playstation')">Vider PlayStation</button>
           <button class="btn danger small" onclick="viderCaisse('tasshilat')">Vider Tasshilat</button>
           <button class="btn danger small" onclick="viderCaisse('commerce')">Vider Commerce</button>
@@ -313,42 +314,21 @@
       </div>
     </details>
 
-    <details class="card">
-      <summary>📈 Revenus des 7 derniers jours</summary>
+    <details class="card" open>
+      <summary>📅 Rapport par période</summary>
       <div class="details-body">
-        <div class="chart-wrap" id="chartWrap"></div>
-        <div class="row" style="margin-top:10px; font-size:11px; color:var(--text-dim);">
-          <span>🟣 PlayStation</span><span>🟡 Tasshilat</span><span>🟢 Commerce</span>
+        <div class="row">
+          <div><label>Date</label><input type="date" id="periodeDate" onchange="renderRapportPeriode()"></div>
+          <div><label>Période</label>
+            <select id="periodeType" onchange="renderRapportPeriode()">
+              <option value="jour">Jour</option>
+              <option value="semaine">Semaine</option>
+              <option value="mois">Mois</option>
+              <option value="annee">Année</option>
+            </select>
+          </div>
         </div>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>📋 Clôture de journée</summary>
-      <div class="details-body">
-        <button class="btn secondary" onclick="genererRapportJour()">Générer le rapport du jour</button>
-        <div id="rapportJourBox" style="display:none; margin-top:12px; font-size:13px;"></div>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>📊 Statistiques mensuelles</summary>
-      <div class="details-body">
-        <div id="statsMensuellesBox" style="font-size:13px; line-height:1.7;"></div>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>📆 Statistiques annuelles</summary>
-      <div class="details-body">
-        <div id="statsAnnuellesBox" style="font-size:13px; line-height:1.7;"></div>
-      </div>
-    </details>
-
-    <details class="card">
-      <summary>📲 Installer l'application</summary>
-      <div class="details-body">
-        <button class="btn secondary" id="installBtn" onclick="installerApp()">📲 Installer l'application</button>
+        <div id="rapportPeriodeBox" style="margin-top:12px; font-size:14px; line-height:1.9;"></div>
       </div>
     </details>
   </section>
@@ -668,11 +648,9 @@ function renderDashboard(){
   document.getElementById("dashRepEnCours").textContent = data.reparations.filter(r=>r.statut==="en cours").length;
   const stockBas = document.getElementById("dashStockBas");
   if(stockBas) stockBas.textContent = data.stock.filter(p=>p.qte<=3).length;
-  renderStatsMensuelles();
-  renderStatsAnnuelles();
-  renderChart7Jours();
   renderDepenses();
   renderDepensesRecurrentes();
+  renderRapportPeriode();
 }
 
 function todayStartTs(){
@@ -851,6 +829,84 @@ function renderDepenses(){
   }
 }
 
+/* ---------- RAPPORT PAR PERIODE (jour / semaine / mois / année) ---------- */
+function getPeriodeRange(dateStr, type){
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const base = new Date(y, m-1, d, 0,0,0,0);
+  let start, end;
+  if(type === "semaine"){
+    const jour = base.getDay(); // 0=dimanche .. 6=samedi
+    const decalage = (jour===0) ? -6 : (1-jour);
+    start = new Date(base); start.setDate(start.getDate()+decalage);
+    end = new Date(start); end.setDate(end.getDate()+7);
+  } else if(type === "mois"){
+    start = new Date(y, m-1, 1);
+    end = new Date(y, m, 1);
+  } else if(type === "annee"){
+    start = new Date(y, 0, 1);
+    end = new Date(y+1, 0, 1);
+  } else { // jour
+    start = base;
+    end = new Date(base); end.setDate(end.getDate()+1);
+  }
+  return {start:start.getTime(), end:end.getTime()};
+}
+
+function calculerRevenuPeriode(startTs, endTs){
+  let total = 0;
+  data.psHistory.forEach(h=>{ if(h.ts>=startTs && h.ts<endTs) total+=h.montant; });
+  data.tashHistory.forEach(h=>{ if(h.ts>=startTs && h.ts<endTs) total+=h.commission; });
+  data.ventesHistory.forEach(v=>{ if(v.ts>=startTs && v.ts<endTs) total+=v.montant; });
+  data.reparations.forEach(r=>{
+    if(r.ts>=startTs && r.ts<endTs) total+=r.acompte;
+    if(r.montantFinal && r.recupTs>=startTs && r.recupTs<endTs) total+=r.montantFinal;
+  });
+  return total;
+}
+
+function calculerDepensesPeriode(startTs, endTs){
+  return data.depenses.filter(d=>d.ts>=startTs && d.ts<endTs).reduce((s,d)=>s+d.montant, 0);
+}
+
+function renderRapportPeriode(){
+  const dateInput = document.getElementById("periodeDate");
+  const typeSelect = document.getElementById("periodeType");
+  const box = document.getElementById("rapportPeriodeBox");
+  if(!dateInput || !typeSelect || !box) return;
+
+  if(!dateInput.value){
+    const now = new Date();
+    dateInput.value = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+  }
+
+  const {start, end} = getPeriodeRange(dateInput.value, typeSelect.value);
+  const revenu = calculerRevenuPeriode(start, end);
+  const depenses = calculerDepensesPeriode(start, end);
+  const net = revenu - depenses;
+  const labels = {jour:"ce jour", semaine:"cette semaine", mois:"ce mois", annee:"cette année"};
+  const lbl = labels[typeSelect.value] || "";
+
+  box.innerHTML = `
+    <p style="margin:4px 0;">💰 Revenu (${lbl}) : <strong>${fmt(revenu)}</strong></p>
+    <p style="margin:4px 0;">💸 Dépenses (${lbl}) : <strong style="color:var(--danger);">-${fmt(depenses)}</strong></p>
+    <p style="margin:10px 0 0; padding-top:8px; border-top:1px solid var(--border); font-weight:700;">Net : ${fmt(net)}</p>
+  `;
+}
+
+function cloturerLaJournee(){
+  showModal("Clôturer la journée", "Vider les 3 caisses (PlayStation, Tasshilat, Commerce) d'un coup ? L'historique et les rapports par période restent intacts, seuls les soldes affichés sont remis à zéro.", {
+    confirmLabel:"Terminer la journée",
+    onConfirm:()=>{
+      data.caisses.playstation = 0;
+      data.caisses.tasshilat = 0;
+      data.caisses.commerce = 0;
+      saveData();
+      renderAll();
+      toast("Journée clôturée, les 3 caisses sont à zéro.");
+    }
+  });
+}
+
 function viderCaisse(type){
   showModal("Vider la caisse", "Confirmer la clôture / le vidage de la caisse '"+type+"' ? Le montant sera remis à 0.", {
     confirmLabel:"Vider",
@@ -907,6 +963,40 @@ function majTarif(id, champ, val){
   const st = data.psStations.find(s=>s.id===id);
   st[champ] = parseFloat(val)||0;
   saveData();
+}
+
+function updateDureeCalculee(id){
+  const st = data.psStations.find(s=>s.id===id);
+  const input = document.getElementById("montantPaye-"+id);
+  const out = document.getElementById("dureeCalculee-"+id);
+  if(!st || !input || !out) return;
+  const montant = parseFloat(input.value) || 0;
+  if(montant<=0 || !st.tarifHeure || st.tarifHeure<=0){ out.textContent = "—"; return; }
+  const totalMin = Math.round((montant/st.tarifHeure)*60);
+  const h = Math.floor(totalMin/60);
+  const m = totalMin%60;
+  out.textContent = String(h).padStart(2,"0")+"h"+String(m).padStart(2,"0");
+}
+
+function demarrerAvecMontant(id){
+  const st = data.psStations.find(s=>s.id===id);
+  const input = document.getElementById("montantPaye-"+id);
+  const montant = parseFloat(input.value);
+  if(!montant || montant<=0){ toast("Veuillez indiquer le montant payé."); return; }
+  if(!st.tarifHeure || st.tarifHeure<=0){ toast("Définissez d'abord un tarif/heure valide."); return; }
+  const dureeMinutes = Math.round((montant/st.tarifHeure)*60);
+  st.status = "occupe";
+  st.startTime = Date.now();
+  st.matchCount = 0;
+  st.dureeMinutes = dureeMinutes;
+  st.notifie = false;
+  saveData();
+  renderPlaystation();
+  if("Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission();
+  }
+  const h = Math.floor(dureeMinutes/60), m = dureeMinutes%60;
+  toast("Session démarrée pour "+fmt(montant)+" — "+String(h).padStart(2,"0")+"h"+String(m).padStart(2,"0")+".");
 }
 
 function demarrerStation(id){
@@ -1080,8 +1170,14 @@ function renderPlaystation(){
         <div><label>Tarif/heure (DH)</label><input type="number" value="${st.tarifHeure}" onchange="majTarif('${st.id}','tarifHeure',this.value)"></div>
         <div><label>Tarif/match (DH)</label><input type="number" value="${st.tarifMatch}" onchange="majTarif('${st.id}','tarifMatch',this.value)"></div>
       </div>
+      ${st.status==="libre" ? `
+      <div class="row" style="margin-top:8px;">
+        <div><label>💰 Montant payé (DH)</label><input type="number" id="montantPaye-${st.id}" placeholder="Ex: 20" oninput="updateDureeCalculee('${st.id}')"></div>
+        <div><label>= Durée de jeu</label><div id="dureeCalculee-${st.id}" style="padding:10px 0; font-weight:700;">—</div></div>
+      </div>` : ""}
       <div class="row" style="margin-top:8px;">
         ${st.status==="libre" ? `<button class="btn small" onclick="demarrerStation('${st.id}')">▶ Démarrer</button>` : ""}
+        ${st.status==="libre" ? `<button class="btn small secondary" onclick="demarrerAvecMontant('${st.id}')">▶ Démarrer avec ce montant</button>` : ""}
         ${st.status==="occupe" ? `<button class="btn small danger" onclick="arreterSansEncaisser('${st.id}')">✖ Arrêter (sans encaisser)</button>` : ""}
         ${st.status==="occupe" ? `<button class="btn small" onclick="terminerEtEncaisser('${st.id}')">⏹ Terminer & Encaisser</button>` : ""}
         <button class="btn small danger" onclick="supprimerStation('${st.id}')">🗑</button>
@@ -2011,28 +2107,6 @@ function renderStatsAnnuelles(){
     <p style="margin:4px 0;">🏆 Meilleur mois : <strong>${bestMonthLabel}</strong>${bestMonth?(' ('+fmt(bestVal)+')'):''}</p>
     <p style="margin:4px 0;">🛒 Produit le plus vendu (année) : <strong>${topProduit ? topProduit.nom+' ('+topProduit.qte+' unités)' : '—'}</strong></p>
   `;
-}
-
-/* ---------- INSTALLATION COMME APPLICATION (PWA) ---------- */
-let deferredInstallPrompt = null;
-window.addEventListener('beforeinstallprompt', (e)=>{
-  e.preventDefault();
-  deferredInstallPrompt = e;
-});
-
-function installerApp(){
-  if(deferredInstallPrompt){
-    deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.finally(()=>{ deferredInstallPrompt = null; });
-  } else {
-    afficherInstructionsInstall();
-  }
-}
-
-function afficherInstructionsInstall(){
-  showModal("📲 Installer l'application", "Android (Chrome) : menu ⋮ en haut à droite → 'Ajouter à l'écran d'accueil' ou 'Installer l'application'.\n\niPhone/iPad (Safari) : bouton Partager 📤 en bas → 'Sur l'écran d'accueil'.\n\nUne icône apparaîtra alors sur votre écran d'accueil, et l'app s'ouvrira en plein écran comme une vraie application.", {
-    confirmLabel:"Compris"
-  });
 }
 
 /* ---------- RENDER GLOBAL ---------- */
