@@ -140,13 +140,6 @@
   .modal-actions{display:flex; gap:8px; margin-top:14px;}
   .modal-actions button{flex:1; margin-top:0;}
 
-  body.light{
-    --bg:#f1f5f9; --bg-card:#ffffff; --bg-card2:#f8fafc; --border:#e2e8f0;
-    --text:#0f172a; --text-dim:#64748b;
-  }
-  body.light header, body.light nav.tabs{ background:#ffffff; }
-  body.light input, body.light select{ background:#f8fafc; color:var(--text); }
-
   tr.stock-low td{ color:var(--danger); font-weight:700; }
 
   .lock-overlay{
@@ -169,37 +162,14 @@
     body *{visibility:hidden;}
     #printArea, #printArea *{visibility:visible;}
     #printArea{display:block; position:absolute; top:0; left:0; width:100%; padding:20px; color:#000;}
-  }  #splashScreen{
-    position:fixed; inset:0; z-index:9999; background:linear-gradient(160deg,#0b1220,#151f38);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    transition:opacity .5s ease, visibility .5s ease;
   }
-  #splashScreen.hide{ opacity:0; visibility:hidden; pointer-events:none; }
-  .splash-logo{ font-size:64px; animation:splashPop .6s ease; }
-  .splash-title{
-    margin-top:14px; font-size:28px; font-weight:800; letter-spacing:1px; color:var(--text);
-    animation:splashFadeUp .6s ease .15s both;
-  }
-  .splash-sub{
-    margin-top:6px; font-size:13px; color:var(--text-dim); letter-spacing:2px; text-transform:uppercase;
-    animation:splashFadeUp .6s ease .3s both;
-  }
-  @keyframes splashPop{ from{ transform:scale(.6); opacity:0; } to{ transform:scale(1); opacity:1; } }
-  @keyframes splashFadeUp{ from{ transform:translateY(10px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
 </style>
 </head>
 <body>
 
-<div id="splashScreen">
-  <div class="splash-logo">🏪</div>
-  <div class="splash-title">Ayoub Zone</div>
-  <div class="splash-sub">Gestion Multi-Services</div>
-</div>
-
 <header>
   <h1>🏪 Magasin Multi-Services</h1>
   <div class="actions">
-    <button onclick="toggleTheme()" id="themeBtn">🌙</button>
     <button onclick="openSecuritySettings()">🔒</button>
     <button onclick="demanderPermissionNotif()" id="notifBtn">🔔</button>
     <button onclick="exportData()">⬇️ Sauvegarder</button>
@@ -268,27 +238,6 @@
       </table>
       <div class="empty" id="depensesEmpty">Aucune dépense enregistrée.</div>
     </div>
-
-    <details class="card">
-      <summary>🔁 Dépenses récurrentes mensuelles</summary>
-      <div class="details-body">
-        <label>Nom</label>
-        <input type="text" id="recNom" placeholder="Ex: Loyer">
-        <div class="row">
-          <div><label>Montant (DH)</label><input type="number" id="recMontant" placeholder="Ex: 1500"></div>
-          <div><label>Depuis quelle caisse ?</label>
-            <select id="recCaisse">
-              <option value="commerce">🛒 Commerce</option>
-              <option value="playstation">🎮 PlayStation</option>
-              <option value="tasshilat">💳 Tasshilat</option>
-              <option value="general">💰 Général / Non catégorisé</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn secondary" onclick="ajouterDepenseRecurrente()">+ Ajouter</button>
-        <div id="depensesRecurrentesList" style="margin-top:12px;"></div>
-      </div>
-    </details>
 
     <div class="card">
       <h2>Aperçu rapide</h2>
@@ -406,31 +355,12 @@
     </div>
 
     <div class="card">
-      <h2>🔄 Réapprovisionner un produit existant</h2>
-      <p style="font-size:12px; color:var(--text-dim); margin-top:0;">Évitez de retaper un produit déjà enregistré — sélectionnez-le, indiquez juste la quantité reçue et le prix. Si le prix d'achat est différent du lot existant, un nouveau lot séparé sera créé automatiquement pour préserver le coût réel de chaque dépôt.</p>
-      <label>Produit</label>
-      <select id="stockProduitExistant" onchange="onSelectProduitExistantChange()">
-        <option value="">— Sélectionner un produit —</option>
-      </select>
-      <label>Quantité reçue (sera ajoutée au stock actuel)</label>
-      <input type="number" id="reapproQte" placeholder="Ex: 10">
-      <div class="row">
-        <div><label>Prix d'achat (DH)</label><input type="number" id="reapproPrixAchat"></div>
-        <div><label>Prix de vente (DH)</label><input type="number" id="reapproPrixVente"></div>
-      </div>
-      <label>Payé depuis quelle caisse ?</label>
-      <select id="reapproPaiementCaisse">
-        <option value="commerce">🛒 Commerce</option>
-        <option value="playstation">🎮 PlayStation</option>
-        <option value="tasshilat">💳 Tasshilat</option>
-        <option value="general">💰 Général / Non catégorisé</option>
-        <option value="aucune">— Ne pas décompter (déjà payé ailleurs) —</option>
-      </select>
-      <button class="btn secondary" onclick="reapprovisionnerProduit()">🔄 Réapprovisionner</button>
-    </div>
+      <h2>Ajouter / modifier un produit</h2>
 
-    <div class="card">
-      <h2>Ajouter un nouveau produit</h2>
+      <label>Produit existant (sélectionner pour modifier, ou laisser vide pour un nouveau produit)</label>
+      <select id="stockProduitExistant" onchange="commencerEditionProduit(this.value)">
+        <option value="">— Nouveau produit —</option>
+      </select>
 
       <label>Nom du produit</label>
       <input type="text" id="stockNom" placeholder="Ex: Câble USB-C">
@@ -440,7 +370,7 @@
       </div>
       <label>Quantité</label>
       <input type="number" id="stockQte" placeholder="Ex: 10">
-      <label>Payé depuis quelle caisse ?</label>
+      <label>Payé depuis quelle caisse ? (uniquement pour un nouvel achat)</label>
       <select id="stockPaiementCaisse">
         <option value="commerce">🛒 Commerce</option>
         <option value="playstation">🎮 PlayStation</option>
@@ -534,9 +464,7 @@ function defaultData(){
     ventesHistory:[],
     reparations:[],
     depenses:[],
-    depensesRecurrentes:[],
     security:{ pinEnabled:false, pin:"" },
-    theme:"dark",
     lastBackupTs:null
   };
 }
@@ -649,7 +577,6 @@ function renderDashboard(){
   const stockBas = document.getElementById("dashStockBas");
   if(stockBas) stockBas.textContent = data.stock.filter(p=>p.qte<=3).length;
   renderDepenses();
-  renderDepensesRecurrentes();
   renderRapportPeriode();
 }
 
@@ -727,87 +654,6 @@ function supprimerDepense(id){
 
 const NOMS_CAISSES = { playstation:"🎮 PlayStation", tasshilat:"💳 Tasshilat", commerce:"🛒 Commerce", general:"💰 Général" };
 
-/* ---------- DEPENSES RECURRENTES MENSUELLES ---------- */
-function currentMonthKey(){
-  const d = new Date();
-  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
-}
-
-function ajouterDepenseRecurrente(){
-  const nom = document.getElementById("recNom").value.trim();
-  const montant = parseFloat(document.getElementById("recMontant").value);
-  const caisse = document.getElementById("recCaisse").value;
-  if(!nom || !montant || montant<=0){ toast("Veuillez remplir le nom et le montant."); return; }
-  data.depensesRecurrentes.push({id:uid(), nom, montant, caisse, lastPaidMonth:null});
-  document.getElementById("recNom").value = "";
-  document.getElementById("recMontant").value = "";
-  saveData();
-  renderDepensesRecurrentes();
-  toast("Dépense récurrente ajoutée.");
-}
-
-function supprimerDepenseRecurrente(id){
-  showModal("Supprimer", "Supprimer cette dépense récurrente ? (Les paiements déjà effectués restent dans l'historique des dépenses.)", {
-    confirmLabel:"Supprimer",
-    onConfirm:()=>{
-      data.depensesRecurrentes = data.depensesRecurrentes.filter(r=>r.id!==id);
-      saveData();
-      renderDepensesRecurrentes();
-    }
-  });
-}
-
-function payerDepenseRecurrente(id){
-  const r = data.depensesRecurrentes.find(x=>x.id===id);
-  if(!r) return;
-  const mk = currentMonthKey();
-  data.depenses.unshift({
-    id: uid(),
-    date: new Date().toLocaleString('fr-FR'),
-    ts: Date.now(),
-    caisse: r.caisse, montant: r.montant, motif: r.nom + " (récurrent)"
-  });
-  r.lastPaidMonth = mk;
-  saveData();
-  renderAll();
-  toast(r.nom + " marqué payé pour ce mois (n'affecte pas les caisses).");
-}
-
-function renderDepensesRecurrentes(){
-  const box = document.getElementById("depensesRecurrentesList");
-  if(!box) return;
-  const mk = currentMonthKey();
-  if(data.depensesRecurrentes.length===0){
-    box.innerHTML = '<p class="empty" style="margin:0;">Aucune dépense récurrente définie.</p>';
-    return;
-  }
-  box.innerHTML = data.depensesRecurrentes.map(r=>{
-    const paye = r.lastPaidMonth === mk;
-    return `<div class="station" style="margin-bottom:8px;">
-      <div class="top">
-        <strong>${r.nom}</strong>
-        <span class="pill ${paye?'libre':'occupe'}">${paye?'✅ Payé ce mois':'⏳ En attente'}</span>
-      </div>
-      <div class="cost">${NOMS_CAISSES[r.caisse]||r.caisse} — ${fmt(r.montant)} / mois</div>
-      <div class="row" style="margin-top:8px;">
-        ${!paye ? `<button class="btn small" onclick="payerDepenseRecurrente('${r.id}')">✅ Marquer payé</button>` : ''}
-        <button class="btn small danger" onclick="supprimerDepenseRecurrente('${r.id}')">🗑</button>
-      </div>
-    </div>`;
-  }).join("");
-}
-
-function checkDepensesRecurrentesOnStart(){
-  const mk = currentMonthKey();
-  const enAttente = data.depensesRecurrentes.filter(r=>r.lastPaidMonth !== mk);
-  if(enAttente.length>0){
-    setTimeout(()=>{
-      const liste = enAttente.map(r=>r.nom).join(", ");
-      toast("🔁 Dépenses récurrentes en attente ce mois : "+liste, 6000);
-    }, 4200);
-  }
-}
-
 function renderDepenses(){
   const body = document.getElementById("depensesBody");
   if(!body) return;
@@ -868,6 +714,19 @@ function calculerDepensesPeriode(startTs, endTs){
   return data.depenses.filter(d=>d.ts>=startTs && d.ts<endTs).reduce((s,d)=>s+d.montant, 0);
 }
 
+function calculerVentesParProduit(startTs, endTs){
+  const map = {};
+  data.ventesHistory.forEach(v=>{
+    if(!v.ts || v.ts<startTs || v.ts>=endTs) return;
+    if(!map[v.produit]) map[v.produit] = {qte:0, montant:0};
+    map[v.produit].qte += v.qte;
+    map[v.produit].montant += v.montant;
+  });
+  return Object.entries(map)
+    .map(([nom, d])=>({nom, qte:d.qte, montant:d.montant}))
+    .sort((a,b)=>b.montant-a.montant);
+}
+
 function renderRapportPeriode(){
   const dateInput = document.getElementById("periodeDate");
   const typeSelect = document.getElementById("periodeType");
@@ -885,11 +744,24 @@ function renderRapportPeriode(){
   const net = revenu - depenses;
   const labels = {jour:"ce jour", semaine:"cette semaine", mois:"ce mois", annee:"cette année"};
   const lbl = labels[typeSelect.value] || "";
+  const ventes = calculerVentesParProduit(start, end);
+
+  let ventesHtml = `<p style="margin:12px 0 4px; font-weight:700;">🛒 Produits vendus (${lbl})</p>`;
+  if(ventes.length === 0){
+    ventesHtml += `<p style="margin:4px 0; color:var(--text-dim); font-size:13px;">Aucune vente sur cette période.</p>`;
+  } else {
+    ventesHtml += `<table><thead><tr><th>Produit</th><th>Qté</th><th>Montant</th></tr></thead><tbody>`;
+    ventes.forEach(v=>{
+      ventesHtml += `<tr><td>${v.nom}</td><td>${v.qte}</td><td class="amount">${fmt(v.montant)}</td></tr>`;
+    });
+    ventesHtml += `</tbody></table>`;
+  }
 
   box.innerHTML = `
     <p style="margin:4px 0;">💰 Revenu (${lbl}) : <strong>${fmt(revenu)}</strong></p>
     <p style="margin:4px 0;">💸 Dépenses (${lbl}) : <strong style="color:var(--danger);">-${fmt(depenses)}</strong></p>
     <p style="margin:10px 0 0; padding-top:8px; border-top:1px solid var(--border); font-weight:700;">Net : ${fmt(net)}</p>
+    ${ventesHtml}
   `;
 }
 
@@ -1227,13 +1099,13 @@ function tickPlaystationTimers(){
 }
 
 function declencherAlerteFinDeTemps(st){
-  toast("⏰ Temps écoulé pour "+st.nom+" ! Merci de récupérer la manette / encaisser.", 8000);
+  toast("⏰ Temps écoulé pour "+st.nom+" !", 4000);
   try{
     if("Notification" in window && Notification.permission === "granted"){
       new Notification("⏰ Temps écoulé", { body: "La session de " + st.nom + " est terminée." });
     }
   }catch(e){}
-  if(navigator.vibrate) navigator.vibrate([300,120,300,120,300,120,300,120,300]);
+  if(navigator.vibrate) navigator.vibrate([300,150,300]);
   jouerSonAlerte();
 }
 
@@ -1254,7 +1126,7 @@ function jouerSonAlerte(){
         o.stop(ctx.currentTime + 0.4);
       }, delay);
     };
-    beep(0); beep(500); beep(1000); beep(2000); beep(2500); beep(3000);
+    beep(0); beep(500);
   }catch(e){}
 }
 
@@ -1333,74 +1205,21 @@ let editingProductId = null;
 function renderSelectProduitExistant(){
   const sel = document.getElementById("stockProduitExistant");
   if(!sel) return;
-  const prevVal = sel.value;
-  sel.innerHTML = '<option value="">— Sélectionner un produit —</option>' +
-    data.stock.map(p=>`<option value="${p.id}">${p.nom} (stock actuel : ${p.qte})</option>`).join("");
-  if(prevVal && data.stock.some(p=>p.id===prevVal)) sel.value = prevVal;
-}
-
-function onSelectProduitExistantChange(){
-  const sel = document.getElementById("stockProduitExistant");
-  const p = data.stock.find(x=>x.id===sel.value);
-  document.getElementById("reapproPrixAchat").value = p ? p.prixAchat : "";
-  document.getElementById("reapproPrixVente").value = p ? p.prixVente : "";
-}
-
-function reapprovisionnerProduit(){
-  const sel = document.getElementById("stockProduitExistant");
-  if(!sel.value){ toast("Veuillez sélectionner un produit."); return; }
-  const p = data.stock.find(x=>x.id===sel.value);
-  if(!p) return;
-  const qteAjoutee = parseInt(document.getElementById("reapproQte").value);
-  const prixAchat = parseFloat(document.getElementById("reapproPrixAchat").value);
-  const prixVente = parseFloat(document.getElementById("reapproPrixVente").value);
-  if(!qteAjoutee || qteAjoutee<=0){ toast("Veuillez indiquer la quantité reçue."); return; }
-  if(isNaN(prixAchat) || isNaN(prixVente)){ toast("Prix invalide."); return; }
-
-  const finirReappro = (depId)=>{
-    const coutDeduit = !!depId;
-    const memePrixAchat = Math.round(prixAchat*100) === Math.round(p.prixAchat*100);
-    const suffixe = coutDeduit ? " — "+fmt(prixAchat*qteAjoutee)+" enregistrés en dépense." : "";
-
-    if(memePrixAchat){
-      // Même prix d'achat que le lot existant : fusion normale (le prix de vente peut être ajusté)
-      p.qte += qteAjoutee;
-      p.prixVente = prixVente;
-      if(depId){
-        p.depenseIds = p.depenseIds || [];
-        p.depenseIds.push(depId);
-      }
-      toast("Stock mis à jour : "+p.nom+" (+"+qteAjoutee+", total "+p.qte+")"+suffixe);
-    } else {
-      // Prix d'achat différent : on crée un nouveau lot séparé pour ne jamais fausser le coût réel
-      // d'un lot précédent (ex: 1er arrivage à 10 DH, 2e arrivage à 20 DH doivent rester distincts).
-      data.stock.push({id:uid(), nom:p.nom, prixAchat, prixVente, qte:qteAjoutee, depenseIds: depId?[depId]:[]});
-      toast("Nouveau lot séparé créé pour "+p.nom+" (prix d'achat différent)."+suffixe, 5000);
-    }
-
-    document.getElementById("reapproQte").value = "";
-    document.getElementById("reapproPrixAchat").value = "";
-    document.getElementById("reapproPrixVente").value = "";
-    sel.value = "";
-    saveData();
-    renderAll();
-  };
-
-  const caisseChoisie = document.getElementById("reapproPaiementCaisse").value;
-  const coutTotal = prixAchat * qteAjoutee;
-  payerAchatStock(caisseChoisie, coutTotal, "Réapprovisionnement : "+p.nom, finirReappro);
+  const valASelectionner = editingProductId || "";
+  sel.innerHTML = '<option value="">— Nouveau produit —</option>' +
+    data.stock.map(p=>`<option value="${p.id}">${p.nom} (stock : ${p.qte})</option>`).join("");
+  sel.value = valASelectionner;
 }
 
 function payerAchatStock(caisseChoisie, montant, motif, callback){
-  if(caisseChoisie === 'aucune' || !montant || montant<=0){ callback(null); return; }
-  const depId = uid();
+  if(caisseChoisie === 'aucune' || !montant || montant<=0){ callback(); return; }
   data.depenses.unshift({
-    id: depId,
+    id: uid(),
     date: new Date().toLocaleString('fr-FR'),
     ts: Date.now(),
     caisse: caisseChoisie, montant, motif
   });
-  callback(depId);
+  callback();
 }
 
 function ajouterProduit(){
@@ -1410,35 +1229,17 @@ function ajouterProduit(){
   const qte = parseInt(document.getElementById("stockQte").value);
   if(!nom || isNaN(prixAchat) || isNaN(prixVente) || isNaN(qte)){ toast("Veuillez remplir tous les champs."); return; }
 
-  const finirAjout = (depId)=>{
+  const finir = ()=>{
     if(editingProductId){
       const p = data.stock.find(x=>x.id===editingProductId);
       if(p){
         p.nom = nom; p.prixAchat = prixAchat; p.prixVente = prixVente; p.qte = qte;
-
-        // Si ce produit a une dépense d'achat liée (créée à l'ajout ou au réapprovisionnement),
-        // on corrige son montant pour refléter le prix/quantité corrigés — utile en cas d'erreur de saisie initiale.
-        const liees = (p.depenseIds||[]).map(did=>data.depenses.find(d=>d.id===did)).filter(Boolean);
-        if(liees.length === 1){
-          const dep = liees[0];
-          const nouveauMontant = prixAchat * qte;
-          if(Math.round(dep.montant*100) !== Math.round(nouveauMontant*100)){
-            dep.montant = nouveauMontant;
-            dep.motif = "Achat stock : "+nom+" (corrigé)";
-            toast("Produit modifié — dépense liée corrigée à "+fmt(nouveauMontant)+".");
-          } else {
-            toast("Produit modifié.");
-          }
-        } else if(liees.length > 1){
-          toast("Produit modifié. Plusieurs dépenses sont liées à ce produit — corrigez-les manuellement si besoin.", 5000);
-        } else {
-          toast("Produit modifié.");
-        }
+        toast("Produit modifié.");
       }
       annulerEditionProduit();
     } else {
-      data.stock.push({id:uid(), nom, prixAchat, prixVente, qte, depenseIds: depId?[depId]:[]});
-      toast("Produit ajouté."+(depId ? " "+fmt(prixAchat*qte)+" enregistrés en dépense." : ""));
+      data.stock.push({id:uid(), nom, prixAchat, prixVente, qte});
+      toast("Produit ajouté.");
     }
     document.getElementById("stockNom").value = "";
     document.getElementById("stockPrixAchat").value = "";
@@ -1449,17 +1250,17 @@ function ajouterProduit(){
   };
 
   if(editingProductId){
-    // Correction d'une fiche existante : pas de nouvel achat déduit, seulement une éventuelle
-    // correction de la dépense déjà liée (voir finirAjout).
-    finirAjout(null);
+    // Correction d'une fiche existante : pas de décompte automatique, on ne touche pas aux dépenses.
+    finir();
   } else {
     const caisseChoisie = document.getElementById("stockPaiementCaisse").value;
     const coutTotal = prixAchat * qte;
-    payerAchatStock(caisseChoisie, coutTotal, "Achat stock : "+nom, finirAjout);
+    payerAchatStock(caisseChoisie, coutTotal, "Achat stock : "+nom, finir);
   }
 }
 
 function commencerEditionProduit(id){
+  if(!id){ annulerEditionProduit(); return; }
   const p = data.stock.find(x=>x.id===id);
   if(!p) return;
   editingProductId = id;
@@ -1469,6 +1270,8 @@ function commencerEditionProduit(id){
   document.getElementById("stockQte").value = p.qte;
   document.getElementById("btnAjouterProduit").textContent = "💾 Enregistrer les modifications";
   document.getElementById("btnAnnulerEdition").style.display = "inline-block";
+  const sel = document.getElementById("stockProduitExistant");
+  if(sel) sel.value = id;
   document.getElementById("stockNom").scrollIntoView({behavior:"smooth", block:"center"});
 }
 
@@ -1480,6 +1283,8 @@ function annulerEditionProduit(){
   document.getElementById("stockQte").value = "";
   document.getElementById("btnAjouterProduit").textContent = "Ajouter au stock";
   document.getElementById("btnAnnulerEdition").style.display = "none";
+  const sel = document.getElementById("stockProduitExistant");
+  if(sel) sel.value = "";
 }
 
 function renderVenteSelect(){
@@ -1843,41 +1648,7 @@ function checkBackupReminder(){
     }, 1200);
   }
 }
-function applyTheme(){
-  const btn = document.getElementById("themeBtn");
-  if(data.theme === "light"){
-    document.body.classList.add("light");
-    if(btn) btn.textContent = "☀️";
-  } else {
-    document.body.classList.remove("light");
-    if(btn) btn.textContent = "🌙";
-  }
-}
-
-function toggleTheme(){
-  data.theme = (data.theme === "light") ? "dark" : "light";
-  saveData();
-  applyTheme();
-}
-
 /* ---------- VERROUILLAGE PAR MOT DE PASSE ---------- */
-let autoLockTimer = null;
-const DUREE_AUTO_LOCK = 2*60*60*1000; // 2 heures
-
-function startAutoLockTimer(){
-  if(autoLockTimer) clearTimeout(autoLockTimer);
-  if(data.security && data.security.pinEnabled){
-    autoLockTimer = setTimeout(()=>{
-      document.getElementById("lockOverlay").classList.remove("hidden");
-      setTimeout(()=>document.getElementById("lockPwInput").focus(), 100);
-    }, DUREE_AUTO_LOCK);
-  }
-}
-
-function stopAutoLockTimer(){
-  if(autoLockTimer){ clearTimeout(autoLockTimer); autoLockTimer = null; }
-}
-
 function checkLockOnStart(){
   const overlay = document.getElementById("lockOverlay");
   if(data.security && data.security.pinEnabled){
@@ -1887,7 +1658,6 @@ function checkLockOnStart(){
     overlay.classList.add("hidden");
     checkBackupReminder();
     checkStockAlertOnStart();
-    checkDepensesRecurrentesOnStart();
   }
 }
 
@@ -1898,8 +1668,6 @@ function attemptUnlock(){
     inp.value = "";
     checkBackupReminder();
     checkStockAlertOnStart();
-    checkDepensesRecurrentesOnStart();
-    startAutoLockTimer();
   } else {
     toast("Mot de passe incorrect.");
     inp.value = "";
@@ -1909,25 +1677,23 @@ function attemptUnlock(){
 
 function openSecuritySettings(){
   if(data.security && data.security.pinEnabled){
-    showModal("Sécurité", "Un mot de passe est actif (redemandé automatiquement toutes les 2 heures). Laissez le champ vide et confirmez pour le désactiver, ou entrez-en un nouveau pour le remplacer.", {
+    showModal("Sécurité", "Un mot de passe est actif. Laissez le champ vide et confirmez pour le désactiver, ou entrez-en un nouveau pour le remplacer.", {
       withInput:true, inputType:"password", placeholder:"Nouveau mot de passe (vide = désactiver)", confirmLabel:"Valider",
       onConfirm:(val)=>{
         if(val && val.trim().length>0){
           data.security.pin = val.trim();
           data.security.pinEnabled = true;
           toast("Mot de passe mis à jour.");
-          startAutoLockTimer();
         } else {
           data.security.pin = "";
           data.security.pinEnabled = false;
           toast("Protection par mot de passe désactivée.");
-          stopAutoLockTimer();
         }
         saveData();
       }
     });
   } else {
-    showModal("Activer la protection", "Définissez un mot de passe pour protéger l'accès à l'application. Il sera redemandé automatiquement toutes les 2 heures.", {
+    showModal("Activer la protection", "Définissez un mot de passe pour protéger l'accès à l'application.", {
       withInput:true, inputType:"password", placeholder:"Nouveau mot de passe", confirmLabel:"Activer",
       onConfirm:(val)=>{
         if(!val || val.trim().length===0){ toast("Mot de passe vide, non activé."); return; }
@@ -1935,7 +1701,6 @@ function openSecuritySettings(){
         data.security.pinEnabled = true;
         saveData();
         toast("Protection par mot de passe activée.");
-        startAutoLockTimer();
       }
     });
   }
@@ -2118,14 +1883,8 @@ function renderAll(){
   renderReparations();
 }
 
-applyTheme();
 checkLockOnStart();
 renderAll();
-
-setTimeout(()=>{
-  const splash = document.getElementById("splashScreen");
-  if(splash) splash.classList.add("hide");
-}, 1100);
 </script>
 </body>
 </html>
