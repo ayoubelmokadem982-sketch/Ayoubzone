@@ -1074,7 +1074,7 @@ function renderPlaystation(){
 
   const body = document.getElementById("psHistoryBody");
   body.innerHTML = "";
-  data.psHistory.slice(0,50).forEach(h=>{
+  data.psHistory.slice(0,5).forEach(h=>{
     body.innerHTML += `<tr><td>${h.date}</td><td>${h.poste}</td><td>${h.detail}</td><td class="amount">${fmt(h.montant)}</td><td><button class="btn small secondary" onclick="imprimerRecuPS('${h.id}')">🖨</button></td></tr>`;
   });
   document.getElementById("psHistoryEmpty").style.display = data.psHistory.length? "none":"block";
