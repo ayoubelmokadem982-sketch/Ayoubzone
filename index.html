@@ -39,6 +39,11 @@
   header h1{font-size:17px; margin:0; display:flex; align-items:center; gap:8px;}
   header .actions{display:flex; gap:8px;}
   header button{background:var(--bg-card2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;}
+  .notif-badge{
+    position:absolute; top:-5px; right:-5px; background:var(--danger); color:#fff;
+    font-size:10px; font-weight:700; border-radius:10px; min-width:16px; height:16px;
+    display:flex; align-items:center; justify-content:center; padding:0 3px; line-height:1;
+  }
   header button:active{transform:scale(.95);}
 
   nav.tabs{
@@ -180,7 +185,7 @@
   <h1>🏪 Magasin Multi-Services</h1>
   <div class="actions">
     <button onclick="openSecuritySettings()">🔒</button>
-    <button onclick="demanderPermissionNotif()" id="notifBtn">🔔</button>
+    <button onclick="demanderPermissionNotif()" id="notifBtn" style="position:relative;">🔔</button>
     <button onclick="exportData()">⬇️ Sauvegarder</button>
     <button onclick="importClick()">⬆️ Importer</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -209,6 +214,8 @@
 
   <!-- DASHBOARD -->
   <section id="tab-dashboard">
+    <div id="resumeRapide" style="background:var(--bg-card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.5;"></div>
+
     <div class="card">
       <h2>Caisses (séparées)</h2>
       <div class="grid3">
@@ -220,6 +227,15 @@
         <small>Total général (informatif)</small>
         <div class="val" id="dashTotal">0 DH</div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Notes rapides</h2>
+      <div class="row">
+        <input type="text" id="noteTexte" placeholder="Ex: Commander câbles jeudi" onkeydown="if(event.key==='Enter') ajouterNote()">
+        <button class="btn small" onclick="ajouterNote()">+ Ajouter</button>
+      </div>
+      <div id="notesList" style="margin-top:10px;"></div>
     </div>
 
     <div class="card">
@@ -306,7 +322,7 @@
     <div class="card">
       <h2>Historique des encaissements PS</h2>
       <table>
-        <thead><tr><th>Date</th><th>Poste</th><th>Détail</th><th>Montant</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Poste</th><th>Détail</th><th>Montant</th></tr></thead>
         <tbody id="psHistoryBody"></tbody>
       </table>
       <div class="empty" id="psHistoryEmpty">Aucun encaissement pour le moment.</div>
@@ -400,8 +416,9 @@
 
     <div class="card">
       <h2>Stock actuel</h2>
+      <button class="btn small secondary" onclick="imprimerInventaire()">🖨 Imprimer l'inventaire</button>
       <table>
-        <thead><tr><th>Produit</th><th>Achat</th><th>Vente</th><th>Qté</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Produit</th><th>Achat</th><th>Vente</th><th>Qté</th><th></th></tr></thead>
         <tbody id="stockBody"></tbody>
       </table>
       <div class="empty" id="stockEmpty">Aucun produit en stock.</div>
@@ -479,7 +496,8 @@ function defaultData(){
     reparations:[],
     depenses:[],
     security:{ pinEnabled:false, pin:"" },
-    lastBackupTs:null
+    lastBackupTs:null,
+    notesRapides:[]
   };
 }
 
@@ -592,6 +610,74 @@ function renderDashboard(){
   if(stockBas) stockBas.textContent = data.stock.filter(p=>p.qte<=3).length;
   renderDepenses();
   renderRapportPeriode();
+  renderNotes();
+  renderResumeRapide();
+  updateNotifBadge();
+}
+
+function renderResumeRapide(){
+  const box = document.getElementById("resumeRapide");
+  if(!box) return;
+  const repPret = data.reparations.filter(r=>r.statut==="prêt").length;
+  const repEnCours = data.reparations.filter(r=>r.statut==="en cours").length;
+  const stockBas = data.stock.filter(p=>p.qte<=3).length;
+  const psOccupe = data.psStations.filter(s=>s.status==="occupe").length;
+
+  const parts = [];
+  if(repPret>0) parts.push(repPret+" réparation(s) prête(s) à récupérer");
+  if(repEnCours>0) parts.push(repEnCours+" réparation(s) en cours");
+  if(stockBas>0) parts.push(stockBas+" produit(s) en stock faible");
+  if(psOccupe>0) parts.push(psOccupe+" poste(s) PlayStation occupé(s)");
+
+  box.textContent = parts.length ? "📋 " + parts.join(" • ") : "📋 Tout est calme pour le moment.";
+}
+
+function updateNotifBadge(){
+  const btn = document.getElementById("notifBtn");
+  if(!btn) return;
+  let count = data.stock.filter(p=>p.qte<=3).length;
+  const seuil = 7*24*60*60*1000;
+  if(!data.lastBackupTs || (Date.now()-data.lastBackupTs) > seuil) count++;
+  const ancienne = btn.querySelector(".notif-badge");
+  if(ancienne) ancienne.remove();
+  if(count>0){
+    const span = document.createElement("span");
+    span.className = "notif-badge";
+    span.textContent = count>9 ? "9+" : String(count);
+    btn.appendChild(span);
+  }
+}
+
+/* ---------- NOTES RAPIDES ---------- */
+function ajouterNote(){
+  const input = document.getElementById("noteTexte");
+  const texte = input.value.trim();
+  if(!texte) return;
+  data.notesRapides.unshift({id:uid(), texte});
+  input.value = "";
+  saveData();
+  renderNotes();
+}
+
+function supprimerNote(id){
+  data.notesRapides = data.notesRapides.filter(n=>n.id!==id);
+  saveData();
+  renderNotes();
+}
+
+function renderNotes(){
+  const box = document.getElementById("notesList");
+  if(!box) return;
+  if(data.notesRapides.length===0){
+    box.innerHTML = '<p class="empty" style="margin:0;">Aucune note.</p>';
+    return;
+  }
+  box.innerHTML = data.notesRapides.map(n=>`
+    <div class="row" style="align-items:center; margin-bottom:6px;">
+      <div style="flex:3; font-size:14px;">📌 ${n.texte}</div>
+      <button class="btn small danger" onclick="supprimerNote('${n.id}')">🗑</button>
+    </div>
+  `).join("");
 }
 
 function todayStartTs(){
@@ -1075,7 +1161,7 @@ function renderPlaystation(){
   const body = document.getElementById("psHistoryBody");
   body.innerHTML = "";
   data.psHistory.slice(0,5).forEach(h=>{
-    body.innerHTML += `<tr><td>${h.date}</td><td>${h.poste}</td><td>${h.detail}</td><td class="amount">${fmt(h.montant)}</td><td><button class="btn small secondary" onclick="imprimerRecuPS('${h.id}')">🖨</button></td></tr>`;
+    body.innerHTML += `<tr><td>${h.date}</td><td>${h.poste}</td><td>${h.detail}</td><td class="amount">${fmt(h.montant)}</td></tr>`;
   });
   document.getElementById("psHistoryEmpty").style.display = data.psHistory.length? "none":"block";
 
@@ -1308,8 +1394,9 @@ function renderVenteSelect(){
   if(data.stock.length===0){
     sel.innerHTML = '<option value="">Aucun produit en stock</option>';
   } else {
-    sel.innerHTML = data.stock.map(p=>
-      `<option value="${p.id}">${p.nom} — ${fmt(p.prixVente)} (stock: ${p.qte})</option>`
+    const trie = data.stock.slice().sort((a,b)=> (b.favori?1:0) - (a.favori?1:0));
+    sel.innerHTML = trie.map(p=>
+      `<option value="${p.id}">${p.favori?'⭐ ':''}${p.nom} — ${fmt(p.prixVente)} (stock: ${p.qte})</option>`
     ).join("");
     if(prevVal && data.stock.some(p=>p.id===prevVal)) sel.value = prevVal;
   }
@@ -1397,6 +1484,22 @@ function supprimerProduit(id){
   });
 }
 
+function toggleFavori(id){
+  const p = data.stock.find(x=>x.id===id);
+  if(!p) return;
+  p.favori = !p.favori;
+  saveData();
+  renderStock();
+}
+
+function imprimerInventaire(){
+  if(data.stock.length===0){ toast("Aucun produit en stock."); return; }
+  const lignes = data.stock.map(p=>
+    (p.favori?'⭐ ':'')+p.nom+" — Achat: "+fmt(p.prixAchat)+" | Vente: "+fmt(p.prixVente)+" | Qté: "+p.qte
+  );
+  printReceipt("Inventaire du stock", lignes);
+}
+
 function renderStock(){
   renderVenteSelect();
   renderSelectProduitExistant();
@@ -1406,6 +1509,7 @@ function renderStock(){
   data.stock.forEach(p=>{
     const bas = p.qte <= SEUIL_BAS;
     body.innerHTML += `<tr${bas ? ' style="color:var(--danger);"' : ''}>
+      <td><button class="btn small secondary" onclick="toggleFavori('${p.id}')">${p.favori?'⭐':'☆'}</button></td>
       <td>${p.nom}${bas ? ' ⚠️' : ''}</td><td class="amount">${fmt(p.prixAchat)}</td><td class="amount">${fmt(p.prixVente)}</td><td>${p.qte}</td>
       <td><button class="btn small secondary" onclick="commencerEditionProduit('${p.id}')">✏️</button> <button class="btn small danger" onclick="supprimerProduit('${p.id}')">🗑</button></td>
     </tr>`;
@@ -1418,7 +1522,7 @@ function renderStock(){
   const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
   const filtered = q ? data.ventesHistory.filter(v=>v.produit.toLowerCase().includes(q)) : data.ventesHistory;
   filtered.slice(0,50).forEach(v=>{
-    histBody.innerHTML += `<tr><td>${v.date}</td><td>${v.produit}</td><td>${v.qte}</td><td class="amount">${fmt(v.montant)}</td><td class="amount">${fmt(v.profit)}</td><td><button class="btn small secondary" onclick="imprimerRecuVente('${v.id}')">🖨</button></td></tr>`;
+    histBody.innerHTML += `<tr><td>${v.date}</td><td>${v.produit}</td><td>${v.qte}</td><td class="amount">${fmt(v.montant)}</td><td class="amount">${fmt(v.profit)}</td><td><button class="btn small secondary" onclick="imprimerRecuVente('${v.id}')">🖨</button> <button class="btn small secondary" onclick="partagerRecuVenteWhatsApp('${v.id}')">📲</button></td></tr>`;
   });
   document.getElementById("venteHistoryEmpty").style.display = filtered.length? "none":"block";
 }
@@ -1504,6 +1608,7 @@ function renderReparations(){
           <option value="récupéré" ${r.statut==="récupéré"?"selected":""}>Récupéré</option>
         </select>
         <button class="btn small secondary" onclick="imprimerFicheReparation('${r.id}')">🖨</button>
+        <button class="btn small secondary" onclick="partagerFicheReparationWhatsApp('${r.id}')">📲</button>
         <button class="btn small danger" onclick="supprimerReparation('${r.id}')">🗑</button>
       </div>
     `;
@@ -1582,15 +1687,22 @@ function printReceipt(title, lines){
   window.print();
 }
 
-function imprimerRecuPS(id){
-  const h = data.psHistory.find(x=>x.id===id);
-  if(!h) return;
-  printReceipt("Reçu PlayStation", [
-    "Poste : " + h.poste,
-    "Détail : " + h.detail,
-    "<strong>Montant : " + fmt(h.montant) + "</strong>"
-  ]);
+function partagerWhatsApp(titre, lignesTexte, telephone){
+  const texteBrut = lignesTexte.map(l=>l.replace(/<[^>]+>/g,""));
+  const texte = "🏪 Magasin Multi-Services\n"+titre+"\n"+new Date().toLocaleString('fr-FR')+"\n\n"+texteBrut.join("\n");
+  const encoded = encodeURIComponent(texte);
+  let url;
+  if(telephone && telephone.trim()){
+    let tel = telephone.replace(/[^\d+]/g, "");
+    if(tel.startsWith("0")) tel = "212" + tel.slice(1);
+    else if(tel.startsWith("+")) tel = tel.slice(1);
+    url = "https://wa.me/"+tel+"?text="+encoded;
+  } else {
+    url = "https://wa.me/?text="+encoded;
+  }
+  window.open(url, "_blank");
 }
+
 
 function imprimerRecuVente(id){
   const v = data.ventesHistory.find(x=>x.id===id);
@@ -1600,6 +1712,16 @@ function imprimerRecuVente(id){
     "Quantité : " + v.qte,
     "<strong>Total : " + fmt(v.montant) + "</strong>"
   ]);
+}
+
+function partagerRecuVenteWhatsApp(id){
+  const v = data.ventesHistory.find(x=>x.id===id);
+  if(!v) return;
+  partagerWhatsApp("Reçu de vente", [
+    "Produit : " + v.produit,
+    "Quantité : " + v.qte,
+    "Total : " + fmt(v.montant)
+  ], null);
 }
 
 function imprimerFicheReparation(id){
@@ -1615,6 +1737,20 @@ function imprimerFicheReparation(id){
   if(r.montantFinal !== null) lignes.push("Reste payé : " + fmt(r.montantFinal));
   lignes.push("Statut : " + r.statut);
   printReceipt("Fiche de réparation", lignes);
+}
+
+function partagerFicheReparationWhatsApp(id){
+  const r = data.reparations.find(x=>x.id===id);
+  if(!r) return;
+  const lignes = [
+    "Client : " + r.client,
+    "Modèle : " + r.modele,
+    "Panne : " + r.panne,
+    "Acompte versé : " + fmt(r.acompte)
+  ];
+  if(r.montantFinal !== null) lignes.push("Reste payé : " + fmt(r.montantFinal));
+  lignes.push("Statut : " + r.statut);
+  partagerWhatsApp("Fiche de réparation", lignes, r.tel);
 }
 
 /* ---------- NOTIFICATIONS ---------- */
