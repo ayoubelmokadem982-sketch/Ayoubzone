@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Gestion Magasin Multi-Services</title>
+
+<!-- Installation comme application (icône sur l'écran d'accueil) -->
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Magasin">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='34' fill='%230f172a'/%3E%3Ctext x='50%25' y='62%25' font-size='96' text-anchor='middle'%3E%F0%9F%8F%AA%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%8F%AA%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href='data:application/manifest+json,{"name":"Magasin Multi-Services","short_name":"Magasin","start_url":".","display":"standalone","background_color":"%230f172a","theme_color":"%230f172a","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27192%27 height=%27192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2736%27 fill=%27%230f172a%27/%3E%3Ctext x=%2750%25%27 y=%2762%25%27 font-size=%27104%27 text-anchor=%27middle%27%3E%F0%9F%8F%AA%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg%2Bxml"}]}'>
+
+<style>
+  :root{
+    --bg:#0f172a;
+    --bg-card:#1e293b;
+    --bg-card2:#273449;
+    --border:#334155;
+    --text:#e2e8f0;
+    --text-dim:#94a3b8;
+    --accent:#38bdf8;
+    --ps:#818cf8;
+    --tash:#fbbf24;
+    --com:#34d399;
+    --danger:#f87171;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; font-family:'Segoe UI',Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); padding-bottom:80px;}
+  header{
+    position:sticky; top:0; z-index:20; background:#0b1220; padding:14px 16px;
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border);
+  }
+  header h1{font-size:17px; margin:0; display:flex; align-items:center; gap:8px;}
+  header .actions{display:flex; gap:8px;}
+  header button{background:var(--bg-card2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;}
+  .notif-badge{
+    position:absolute; top:-5px; right:-5px; background:var(--danger); color:#fff;
+    font-size:10px; font-weight:700; border-radius:10px; min-width:16px; height:16px;
+    display:flex; align-items:center; justify-content:center; padding:0 3px; line-height:1;
+  }
+  header button:active{transform:scale(.95);}
+
+  nav.tabs{
+    position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex;
+    background:#0b1220; border-top:1px solid var(--border); padding:4px 2px calc(4px + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -2px 12px rgba(0,0,0,.35);
+  }
+  nav.tabs button{
+    flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    background:transparent; border:none; color:var(--text-dim); padding:8px 2px;
+    font-size:10.5px; font-weight:600; border-radius:10px; cursor:pointer; white-space:nowrap;
+  }
+  nav.tabs button .nav-icon{ font-size:19px; line-height:1; }
+  nav.tabs button.active{ color:var(--accent); }
+  nav.tabs button.active .nav-icon{ transform:scale(1.08); }
+
+  main{padding:16px 16px 90px; max-width:900px; margin:0 auto;}
+  .card{background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px;}
+  .card h2{margin:0 0 12px 0; font-size:16px;}
+  details.card{ padding:0; }
+  details.card summary{
+    list-style:none; cursor:pointer; padding:16px; margin:0; font-size:16px; font-weight:700;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  details.card summary::-webkit-details-marker{ display:none; }
+  details.card summary::after{ content:'▾'; font-size:13px; color:var(--text-dim); transition:transform .2s; margin-left:8px; }
+  details.card[open] summary::after{ transform:rotate(180deg); }
+  details.card summary::before{ content:none; }
+  details.card .details-body{ padding:0 16px 16px; }
+  details.sub-fold{ margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+  details.sub-fold summary{
+    list-style:none; cursor:pointer; font-size:14px; font-weight:700;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  details.sub-fold summary::-webkit-details-marker{ display:none; }
+  details.sub-fold summary::after{ content:'▾'; font-size:12px; color:var(--text-dim); transition:transform .2s; margin-left:8px; }
+  details.sub-fold[open] summary::after{ transform:rotate(180deg); }
+  details.sub-fold .sub-fold-body{ padding-top:8px; }
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  @media (max-width:520px){ .grid3{grid-template-columns:1fr;} }
+
+  .caisse-box{border-radius:12px; padding:14px; color:#0b1220; font-weight:700;}
+  .caisse-box small{display:block; font-weight:500; opacity:.75; font-size:11px; margin-bottom:4px;}
+  .caisse-box .val{font-size:22px;}
+  .caisse-ps{background:var(--ps);}
+  .caisse-tash{background:var(--tash);}
+  .caisse-com{background:var(--com);}
+  .caisse-total{background:#f1f5f9;}
+
+  label{display:block; font-size:12px; color:var(--text-dim); margin:8px 0 4px;}
+  input, select{
+    width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);
+    background:#0f1a2b; color:var(--text); font-size:14px;
+  }
+  input:focus, select:focus{outline:1px solid var(--accent);}
+  .row{display:flex; gap:8px; flex-wrap:wrap;}
+  .row > *{flex:1; min-width:110px;}
+
+  button.btn{
+    background:var(--accent); color:#04202e; border:none; padding:10px 14px; border-radius:9px;
+    font-weight:700; font-size:13px; cursor:pointer; margin-top:10px;
+  }
+  button.btn.secondary{background:var(--bg-card2); color:var(--text); border:1px solid var(--border);}
+  button.btn.danger{background:var(--danger); color:#3a0a0a;}
+  button.btn.small{padding:6px 10px; font-size:12px; margin-top:0;}
+  button.btn:active{transform:scale(.97);}
+
+  table{width:100%; border-collapse:collapse; font-size:14px; margin-top:8px;}
+  td.amount{ font-weight:700; font-size:14.5px; }
+  th,td{padding:8px 6px; border-bottom:1px solid var(--border); text-align:left;}
+  th{color:var(--text-dim); font-weight:600; font-size:11px; text-transform:uppercase;}
+  .badge{padding:3px 8px; border-radius:20px; font-size:11px; font-weight:700;}
+  .badge.encours{background:#fbbf2433; color:#fbbf24;}
+  .badge.pret{background:#38bdf833; color:#38bdf8;}
+  .badge.recupere{background:#34d39933; color:#34d399;}
+
+  .station{border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--bg-card2); transition:box-shadow .3s, border-color .3s;}
+  .station.occupe-card{ border-color:var(--ps); box-shadow:0 0 0 1px var(--ps), 0 0 14px rgba(129,140,248,.35); }
+  @keyframes pulseGlow{
+    0%,100%{ box-shadow:0 0 0 1px var(--ps), 0 0 10px rgba(129,140,248,.3); }
+    50%{ box-shadow:0 0 0 1px var(--ps), 0 0 20px rgba(129,140,248,.6); }
+  }
+  .station.occupe-card{ animation:pulseGlow 2.2s ease-in-out infinite; }
+  .station .top{display:flex; justify-content:space-between; align-items:center;}
+  .station .timer{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ps);}
+  .station .cost{font-size:14px; color:var(--text-dim);}
+  .pill{display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; background:#334155;}
+  .pill.libre{background:#334155;}
+  .pill.occupe{background:#818cf833; color:#818cf8;}
+
+  .empty{color:var(--text-dim); font-size:13px; text-align:center; padding:14px 0;}
+  .toast{
+    position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#0b1220;
+    border:1px solid var(--accent); color:var(--text); padding:10px 16px; border-radius:10px;
+    font-size:13px; z-index:50; opacity:0; transition:opacity .25s; pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.65); display:none;
+    align-items:center; justify-content:center; z-index:999; padding:16px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:18px; max-width:340px; width:100%;}
+  .modal-box h3{margin:0 0 8px 0; font-size:16px;}
+  .modal-box p{margin:0 0 4px 0; font-size:14px; color:var(--text-dim); line-height:1.4; white-space:pre-line;}
+  .modal-actions{display:flex; gap:8px; margin-top:14px;}
+  .modal-actions button{flex:1; margin-top:0;}
+
+  tr.stock-low td{ color:var(--danger); font-weight:700; }
+
+  .lock-overlay{
+    position:fixed; inset:0; background:var(--bg); z-index:1000;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .lock-overlay.hidden{ display:none; }
+  .lock-box{max-width:300px; width:100%; text-align:center;}
+  .lock-box h2{margin-bottom:4px;}
+  .lock-box p{color:var(--text-dim); font-size:13px; margin-bottom:14px;}
+
+  .chart-wrap{display:flex; align-items:flex-end; gap:8px; height:140px; padding-top:10px;}
+  .chart-day{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .chart-bars{display:flex; align-items:flex-end; gap:2px; height:100%; width:100%; justify-content:center;}
+  .chart-bar{width:7px; border-radius:3px 3px 0 0; min-height:2px;}
+  .chart-day .lbl{font-size:10px; color:var(--text-dim); margin-top:6px;}
+
+  #printArea{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block; position:absolute; top:0; left:0; width:100%; padding:20px; color:#000;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏪 Magasin Multi-Services</h1>
+  <div class="actions">
+    <button onclick="openSecuritySettings()">🔒</button>
+    <button onclick="demanderPermissionNotif()" id="notifBtn" style="position:relative;">🔔</button>
+    <button onclick="exportData()">⬇️ Sauvegarder</button>
+    <button onclick="importClick()">⬆️ Importer</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+  <div id="liveClock" style="flex-basis:100%; text-align:center; font-size:12px; color:var(--text-dim); padding-top:6px;"></div>
+</header>
+
+<div class="lock-overlay hidden" id="lockOverlay">
+  <div class="lock-box">
+    <h2>🔒 Application verrouillée</h2>
+    <p>Entrez le mot de passe pour continuer.</p>
+    <input type="password" id="lockPwInput" placeholder="Mot de passe">
+    <button class="btn" style="width:100%;" onclick="attemptUnlock()">Déverrouiller</button>
+  </div>
+</div>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="dashboard" class="active"><span class="nav-icon">📊</span>Dashboard</button>
+  <button data-tab="playstation"><span class="nav-icon">🎮</span>PlayStation</button>
+  <button data-tab="tasshilat"><span class="nav-icon">💳</span>Tasshilat</button>
+  <button data-tab="stock"><span class="nav-icon">🛒</span>Accessoires</button>
+  <button data-tab="reparations"><span class="nav-icon">🔧</span>Réparations</button>
+</nav>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard">
+    <div id="resumeRapide" style="background:var(--bg-card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.5;"></div>
+
+    <div class="card">
+      <h2>Caisses (séparées)</h2>
+      <div class="grid3">
+        <div class="caisse-box caisse-ps"><small>Caisse PlayStation</small><div class="val" id="dashCaissePs">0 DH</div></div>
+        <div class="caisse-box caisse-tash"><small>Caisse Tasshilat (commissions)</small><div class="val" id="dashCaisseTash">0 DH</div></div>
+        <div class="caisse-box caisse-com"><small>Caisse Commerce & Réparations</small><div class="val" id="dashCaisseCom">0 DH</div></div>
+      </div>
+      <div class="caisse-box caisse-total" style="margin-top:10px;">
+        <small>Total général (informatif)</small>
+        <div class="val" id="dashTotal">0 DH</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Notes rapides</h2>
+      <div class="row">
+        <input type="text" id="noteTexte" placeholder="Ex: Commander câbles jeudi" onkeydown="if(event.key==='Enter') ajouterNote()">
+        <button class="btn small" onclick="ajouterNote()">+ Ajouter</button>
+      </div>
+      <div id="notesList" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>💸 Suivi des dépenses (séparé des caisses)</h2>
+      <div class="caisse-box" style="background:var(--danger); color:#3a0a0a; margin-bottom:12px;">
+        <small style="opacity:.8;">Total des dépenses enregistrées</small>
+        <div class="val" id="depensesTotalGlobal">0 DH</div>
+      </div>
+      <label>Catégorie (pour information uniquement)</label>
+      <select id="depenseCaisse">
+        <option value="commerce">🛒 Commerce & Réparations</option>
+        <option value="playstation">🎮 PlayStation</option>
+        <option value="tasshilat">💳 Tasshilat</option>
+        <option value="general">💰 Général / Non catégorisé</option>
+      </select>
+      <div class="row">
+        <div><label>Montant (DH)</label><input type="number" id="depenseMontant" placeholder="Ex: 200"></div>
+        <div><label>Motif</label><input type="text" id="depenseMotif" placeholder="Ex: Achat stock"></div>
+      </div>
+      <button class="btn danger" onclick="enregistrerDepense()">➖ Enregistrer la dépense</button>
+
+      <details class="sub-fold">
+        <summary>📜 Historique des dépenses</summary>
+        <div class="sub-fold-body">
+          <table>
+            <thead><tr><th>Date</th><th>Caisse</th><th>Motif</th><th>Montant</th><th></th></tr></thead>
+            <tbody id="depensesBody"></tbody>
+          </table>
+          <div class="empty" id="depensesEmpty">Aucune dépense enregistrée.</div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Aperçu rapide</h2>
+      <div class="grid">
+        <div><label>Solde Tasshilat disponible</label><div id="dashSolde" style="font-size:18px;font-weight:700;">0 DH</div></div>
+        <div><label>Valeur du stock (au prix d'achat)</label><div id="dashStockVal" style="font-size:18px;font-weight:700;">0 DH</div></div>
+        <div><label>Bénéfice total accessoires</label><div id="dashBenefice" style="font-size:18px;font-weight:700; color:var(--com);">0 DH</div></div>
+        <div><label>Postes PS occupés</label><div id="dashPsOccupe" style="font-size:18px;font-weight:700;">0</div></div>
+        <div><label>Réparations en cours</label><div id="dashRepEnCours" style="font-size:18px;font-weight:700;">0</div></div>
+        <div><label>⚠️ Produits en stock faible</label><div id="dashStockBas" style="font-size:18px;font-weight:700; color:var(--danger);">0</div></div>
+      </div>
+    </div>
+
+    <details class="card">
+      <summary>⚠️ Vider une caisse / Clôturer la journée</summary>
+      <div class="details-body">
+        <button class="btn danger" style="width:100%;" onclick="cloturerLaJournee()">🌙 La journée est terminée (vider les 3 caisses)</button>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn danger small" onclick="viderCaisse('playstation')">Vider PlayStation</button>
+          <button class="btn danger small" onclick="viderCaisse('tasshilat')">Vider Tasshilat</button>
+          <button class="btn danger small" onclick="viderCaisse('commerce')">Vider Commerce</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="card" open>
+      <summary>📅 Rapport par période</summary>
+      <div class="details-body">
+        <div class="row">
+          <div><label>Date</label><input type="date" id="periodeDate" onchange="renderRapportPeriode()"></div>
+          <div><label>Période</label>
+            <select id="periodeType" onchange="renderRapportPeriode()">
+              <option value="jour">Jour</option>
+              <option value="semaine">Semaine</option>
+              <option value="mois">Mois</option>
+              <option value="annee">Année</option>
+            </select>
+          </div>
+        </div>
+        <div id="rapportPeriodeBox" style="margin-top:12px; font-size:14px; line-height:1.9;"></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- PLAYSTATION -->
+  <section id="tab-playstation" style="display:none;">
+    <div class="card">
+      <h2>Postes PlayStation</h2>
+      <div id="stationsList"></div>
+      <button class="btn secondary" onclick="ajouterStation()">+ Ajouter un poste</button>
+    </div>
+    <div class="card">
+      <h2>Historique des encaissements PS</h2>
+      <table>
+        <thead><tr><th>Date</th><th>Poste</th><th>Détail</th><th>Montant</th></tr></thead>
+        <tbody id="psHistoryBody"></tbody>
+      </table>
+      <div class="empty" id="psHistoryEmpty">Aucun encaissement pour le moment.</div>
+    </div>
+  </section>
+
+  <!-- TASSHILAT -->
+  <section id="tab-tasshilat" style="display:none;">
+    <div class="card">
+      <h2>Solde du compte Tasshilat</h2>
+      <div class="caisse-box caisse-tash"><small>Solde disponible pour payer les factures</small><div class="val" id="soldeTashDisplay">0 DH</div></div>
+      <label>Alimenter le compte (recharge)</label>
+      <div class="row">
+        <input type="number" id="rechargeMontant" placeholder="Montant en DH">
+        <button class="btn" onclick="rechargerTasshilat()">Recharger</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Nouvelle opération de paiement</h2>
+      <label>Nom du client</label>
+      <input type="text" id="tashClient" placeholder="Nom du client">
+      <div class="row">
+        <div>
+          <label>Montant de la facture (DH)</label>
+          <input type="number" id="tashMontant" placeholder="Ex: 150">
+        </div>
+        <div>
+          <label>Commission perçue (DH)</label>
+          <input type="number" id="tashCommission" placeholder="Ex: 5">
+        </div>
+      </div>
+      <button class="btn" onclick="ajouterOperationTasshilat()">Enregistrer l'opération</button>
+    </div>
+
+    <div class="card">
+      <h2>Historique des opérations</h2>
+      <table>
+        <thead><tr><th>Date</th><th>Client</th><th>Montant</th><th>Commission</th></tr></thead>
+        <tbody id="tashHistoryBody"></tbody>
+      </table>
+      <div class="empty" id="tashHistoryEmpty">Aucune opération enregistrée.</div>
+    </div>
+  </section>
+
+  <!-- STOCK / ACCESSOIRES -->
+  <section id="tab-stock" style="display:none;">
+    <div class="card">
+      <h2>🧾 Enregistrer une vente</h2>
+      <label>Produit</label>
+      <select id="venteProduit" onchange="onProduitVenteChange()"></select>
+      <div class="row">
+        <div><label>Prix de vente unitaire (DH)</label><input type="number" id="ventePrixUnitaire" oninput="updateVenteTotal()"></div>
+        <div><label>Quantité</label><input type="number" id="venteQte" value="1" min="1" oninput="updateVenteTotal()"></div>
+      </div>
+      <label>Total à encaisser</label>
+      <div id="venteTotal" style="padding:6px 0; font-weight:700; font-size:18px;">0.00 DH</div>
+      <button class="btn" onclick="enregistrerVente()">✅ Encaisser la vente</button>
+      <p style="font-size:11px; color:var(--text-dim); margin-top:6px;">Vous pouvez modifier le prix pour cette vente uniquement — le prix par défaut du produit ne change pas, sauf si vous le modifiez ci-dessous dans "Stock actuel".</p>
+    </div>
+
+    <div class="card">
+      <h2>Ajouter / modifier un produit</h2>
+
+      <label>Produit existant (sélectionner pour modifier, ou laisser vide pour un nouveau produit)</label>
+      <select id="stockProduitExistant" onchange="commencerEditionProduit(this.value)">
+        <option value="">— Nouveau produit —</option>
+      </select>
+
+      <label>Nom du produit</label>
+      <input type="text" id="stockNom" placeholder="Ex: Câble USB-C">
+      <div class="row">
+        <div><label>Prix d'achat (DH)</label><input type="number" id="stockPrixAchat" placeholder="Ex: 20"></div>
+        <div><label>Prix de vente (DH)</label><input type="number" id="stockPrixVente" placeholder="Ex: 30"></div>
+      </div>
+      <label>Quantité</label>
+      <input type="number" id="stockQte" placeholder="Ex: 10">
+      <label>Payé depuis quelle caisse ? (uniquement pour un nouvel achat)</label>
+      <select id="stockPaiementCaisse">
+        <option value="commerce">🛒 Commerce</option>
+        <option value="playstation">🎮 PlayStation</option>
+        <option value="tasshilat">💳 Tasshilat</option>
+        <option value="general">💰 Général / Non catégorisé</option>
+        <option value="aucune">— Ne pas décompter (déjà payé ailleurs) —</option>
+      </select>
+      <div class="row">
+        <button class="btn" id="btnAjouterProduit" onclick="ajouterProduit()">Ajouter au stock</button>
+        <button class="btn secondary" id="btnAnnulerEdition" style="display:none;" onclick="annulerEditionProduit()">Annuler</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Stock actuel</h2>
+      <button class="btn small secondary" onclick="imprimerInventaire()">🖨 Imprimer l'inventaire</button>
+      <table>
+        <thead><tr><th></th><th>Produit</th><th>Achat</th><th>Vente</th><th>Qté</th><th></th></tr></thead>
+        <tbody id="stockBody"></tbody>
+      </table>
+      <div class="empty" id="stockEmpty">Aucun produit en stock.</div>
+    </div>
+
+    <div class="card">
+      <h2>Historique des ventes</h2>
+      <input type="text" id="venteSearch" placeholder="🔎 Rechercher par produit..." oninput="renderStock()">
+      <table>
+        <thead><tr><th>Date</th><th>Produit</th><th>Qté</th><th>Vente</th><th>Bénéfice</th><th></th></tr></thead>
+        <tbody id="venteHistoryBody"></tbody>
+      </table>
+      <div class="empty" id="venteHistoryEmpty">Aucune vente enregistrée.</div>
+    </div>
+  </section>
+
+  <!-- REPARATIONS -->
+  <section id="tab-reparations" style="display:none;">
+    <div class="card">
+      <h2>Nouvelle fiche réparation</h2>
+      <label>Nom du client</label>
+      <input type="text" id="repClient" placeholder="Nom du client">
+      <div class="row">
+        <div><label>Téléphone du client</label><input type="text" id="repTel" placeholder="06XXXXXXXX"></div>
+        <div><label>Modèle du téléphone</label><input type="text" id="repModele" placeholder="Ex: iPhone 11"></div>
+      </div>
+      <label>Description de la panne</label>
+      <input type="text" id="repPanne" placeholder="Ex: Écran cassé">
+      <label>Acompte versé (DH)</label>
+      <input type="number" id="repAcompte" placeholder="Ex: 100">
+      <button class="btn" onclick="ajouterReparation()">Créer la fiche</button>
+    </div>
+
+    <div class="card">
+      <h2>Tickets de réparation</h2>
+      <div id="repList"></div>
+      <div class="empty" id="repEmpty">Aucun ticket enregistré.</div>
+    </div>
+  </section>
+
+</main>
+
+<div id="printArea"></div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h3 id="modalTitle">Confirmation</h3>
+    <p id="modalMessage"></p>
+    <input type="text" id="modalInput" style="display:none; margin-top:8px;">
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="modalCancel()">Annuler</button>
+      <button class="btn" id="modalConfirmBtn" onclick="modalConfirm()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- DONNEES ---------- */
+const STORAGE_KEY = "gestionMagasinData_v1";
+
+function defaultData(){
+  return {
+    caisses:{ playstation:0, tasshilat:0, commerce:0 },
+    psStations:[
+      {id: uid(), nom:"Poste 1", mode:"heure", tarifHeure:10, tarifMatch:3, status:"libre", startTime:null, matchCount:0},
+      {id: uid(), nom:"Poste 2", mode:"heure", tarifHeure:10, tarifMatch:3, status:"libre", startTime:null, matchCount:0}
+    ],
+    psHistory:[],
+    tasshilatSolde:0,
+    tashHistory:[],
+    stock:[],
+    ventesHistory:[],
+    reparations:[],
+    depenses:[],
+    security:{ pinEnabled:false, pin:"" },
+    lastBackupTs:null,
+    notesRapides:[]
+  };
+}
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+let data = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    const parsed = JSON.parse(raw);
+    // fusion sécurisée avec les valeurs par défaut si des champs manquent
+    return Object.assign(defaultData(), parsed);
+  }catch(e){
+    console.error("Erreur de lecture des données", e);
+    return defaultData();
+  }
+}
+
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function fmt(n){
+  return (Math.round((n||0)*100)/100).toFixed(2) + " DH";
+}
+
+function toast(msg, duree){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>t.classList.remove("show"), duree || 2200);
+}
+
+/* ---------- FENETRE DE CONFIRMATION PERSONNALISEE ----------
+   Remplace window.confirm()/prompt(), qui peuvent être bloqués ou ne rien
+   afficher dans certains navigateurs/webviews mobiles — ce qui rendait des
+   boutons comme "Terminer & Encaisser" apparemment "sans réaction". */
+let modalConfirmCb = null;
+let modalCancelCb = null;
+let modalHasInput = false;
+
+function showModal(title, message, opts={}){
+  opts = opts || {};
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMessage').textContent = message;
+  const inp = document.getElementById('modalInput');
+  modalHasInput = !!opts.withInput;
+  if(modalHasInput){
+    inp.style.display = 'block';
+    inp.type = opts.inputType || 'text';
+    inp.value = (opts.inputValue !== undefined) ? opts.inputValue : '';
+    inp.placeholder = opts.placeholder || '';
+  } else {
+    inp.style.display = 'none';
+  }
+  document.getElementById('modalConfirmBtn').textContent = opts.confirmLabel || 'Confirmer';
+  modalConfirmCb = opts.onConfirm || null;
+  modalCancelCb = opts.onCancel || null;
+  document.getElementById('modalOverlay').classList.add('show');
+  if(modalHasInput) setTimeout(()=>{ inp.focus(); inp.select(); }, 50);
+}
+
+function modalCancel(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  const cb = modalCancelCb;
+  modalConfirmCb = null;
+  modalCancelCb = null;
+  if(cb) cb();
+}
+
+function modalConfirm(){
+  const inp = document.getElementById('modalInput');
+  const value = modalHasInput ? inp.value : true;
+  document.getElementById('modalOverlay').classList.remove('show');
+  const cb = modalConfirmCb;
+  modalConfirmCb = null;
+  modalCancelCb = null;
+  if(cb) cb(value);
+}
+
+/* ---------- NAVIGATION ---------- */
+document.getElementById("tabs").addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-tab]");
+  if(!btn) return;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll("main > section").forEach(s=>s.style.display="none");
+  document.getElementById("tab-"+btn.dataset.tab).style.display="block";
+  renderAll();
+});
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(){
+  document.getElementById("dashCaissePs").textContent = fmt(data.caisses.playstation);
+  document.getElementById("dashCaisseTash").textContent = fmt(data.caisses.tasshilat);
+  document.getElementById("dashCaisseCom").textContent = fmt(data.caisses.commerce);
+  const total = data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce;
+  document.getElementById("dashTotal").textContent = fmt(total);
+  document.getElementById("dashSolde").textContent = fmt(data.tasshilatSolde);
+  const stockVal = data.stock.reduce((s,p)=>s + p.prixAchat*p.qte, 0);
+  document.getElementById("dashStockVal").textContent = fmt(stockVal);
+  const beneficeTotal = data.ventesHistory.reduce((s,v)=>s + v.profit, 0);
+  document.getElementById("dashBenefice").textContent = fmt(beneficeTotal);
+  document.getElementById("dashPsOccupe").textContent = data.psStations.filter(s=>s.status==="occupe").length + " / " + data.psStations.length;
+  document.getElementById("dashRepEnCours").textContent = data.reparations.filter(r=>r.statut==="en cours").length;
+  const stockBas = document.getElementById("dashStockBas");
+  if(stockBas) stockBas.textContent = data.stock.filter(p=>p.qte<=3).length;
+  renderDepenses();
+  renderRapportPeriode();
+  renderNotes();
+  renderResumeRapide();
+  updateNotifBadge();
+}
+
+function renderResumeRapide(){
+  const box = document.getElementById("resumeRapide");
+  if(!box) return;
+  const repPret = data.reparations.filter(r=>r.statut==="prêt").length;
+  const repEnCours = data.reparations.filter(r=>r.statut==="en cours").length;
+  const stockBas = data.stock.filter(p=>p.qte<=3).length;
+  const psOccupe = data.psStations.filter(s=>s.status==="occupe").length;
+
+  const parts = [];
+  if(repPret>0) parts.push(repPret+" réparation(s) prête(s) à récupérer");
+  if(repEnCours>0) parts.push(repEnCours+" réparation(s) en cours");
+  if(stockBas>0) parts.push(stockBas+" produit(s) en stock faible");
+  if(psOccupe>0) parts.push(psOccupe+" poste(s) PlayStation occupé(s)");
+
+  box.textContent = parts.length ? "📋 " + parts.join(" • ") : "📋 Tout est calme pour le moment.";
+}
+
+function updateNotifBadge(){
+  const btn = document.getElementById("notifBtn");
+  if(!btn) return;
+  let count = data.stock.filter(p=>p.qte<=3).length;
+  const seuil = 7*24*60*60*1000;
+  if(!data.lastBackupTs || (Date.now()-data.lastBackupTs) > seuil) count++;
+  const ancienne = btn.querySelector(".notif-badge");
+  if(ancienne) ancienne.remove();
+  if(count>0){
+    const span = document.createElement("span");
+    span.className = "notif-badge";
+    span.textContent = count>9 ? "9+" : String(count);
+    btn.appendChild(span);
+  }
+}
+
+/* ---------- NOTES RAPIDES ---------- */
+function ajouterNote(){
+  const input = document.getElementById("noteTexte");
+  const texte = input.value.trim();
+  if(!texte) return;
+  data.notesRapides.unshift({id:uid(), texte});
+  input.value = "";
+  saveData();
+  renderNotes();
+}
+
+function supprimerNote(id){
+  data.notesRapides = data.notesRapides.filter(n=>n.id!==id);
+  saveData();
+  renderNotes();
+}
+
+function renderNotes(){
+  const box = document.getElementById("notesList");
+  if(!box) return;
+  if(data.notesRapides.length===0){
+    box.innerHTML = '<p class="empty" style="margin:0;">Aucune note.</p>';
+    return;
+  }
+  box.innerHTML = data.notesRapides.map(n=>`
+    <div class="row" style="align-items:center; margin-bottom:6px;">
+      <div style="flex:3; font-size:14px;">📌 ${n.texte}</div>
+      <button class="btn small danger" onclick="supprimerNote('${n.id}')">🗑</button>
+    </div>
+  `).join("");
+}
+
+function todayStartTs(){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d.getTime();
+}
+
+function genererRapportJour(){
+  const t0 = todayStartTs();
+  const psToday = data.psHistory.filter(h=>h.ts && h.ts>=t0);
+  const tashToday = data.tashHistory.filter(h=>h.ts && h.ts>=t0);
+  const venteToday = data.ventesHistory.filter(h=>h.ts && h.ts>=t0);
+  const repCreesToday = data.reparations.filter(r=>r.ts && r.ts>=t0);
+  const repRecupToday = data.reparations.filter(r=>r.recupTs && r.recupTs>=t0);
+
+  const psTotal = psToday.reduce((s,h)=>s+h.montant,0);
+  const tashTotal = tashToday.reduce((s,h)=>s+h.commission,0);
+  const venteTotal = venteToday.reduce((s,h)=>s+h.montant,0);
+  const venteProfit = venteToday.reduce((s,h)=>s+h.profit,0);
+  const repAcompteToday = repCreesToday.reduce((s,r)=>s+r.acompte,0);
+  const repRestantToday = repRecupToday.reduce((s,r)=>s+(r.montantFinal||0),0);
+  const depensesToday = data.depenses.filter(d=>d.ts && d.ts>=t0);
+  const depensesTotal = depensesToday.reduce((s,d)=>s+d.montant,0);
+  const totalJour = psTotal + tashTotal + venteTotal + repAcompteToday + repRestantToday;
+  const netJour = totalJour - depensesTotal;
+
+  const box = document.getElementById("rapportJourBox");
+  box.innerHTML = `
+    <p style="margin:4px 0;"><strong>🎮 PlayStation</strong> — ${psToday.length} encaissement(s) : ${fmt(psTotal)}</p>
+    <p style="margin:4px 0;"><strong>💳 Tasshilat</strong> — ${tashToday.length} opération(s), commissions : ${fmt(tashTotal)}</p>
+    <p style="margin:4px 0;"><strong>🛒 Ventes accessoires</strong> — ${venteToday.length} vente(s) : ${fmt(venteTotal)} (bénéfice : ${fmt(venteProfit)})</p>
+    <p style="margin:4px 0;"><strong>🔧 Réparations</strong> — ${repCreesToday.length} nouvelle(s) fiche(s) (acomptes : ${fmt(repAcompteToday)}), ${repRecupToday.length} récupérée(s) (${fmt(repRestantToday)})</p>
+    <p style="margin:4px 0;"><strong>💸 Dépenses</strong> — ${depensesToday.length} sortie(s) : ${fmt(depensesTotal)}</p>
+    <p style="margin:10px 0 0 0; padding-top:8px; border-top:1px solid var(--border);">Total encaissé aujourd'hui : <strong>${fmt(totalJour)}</strong></p>
+    <p style="margin:4px 0; font-weight:700;">Net après dépenses : ${fmt(netJour)}</p>
+    <p style="margin:4px 0; font-size:11px; color:var(--text-dim);">Les soldes actuels des caisses ci-dessus incluent aussi ce qui n'a pas encore été vidé les jours précédents.</p>
+  `;
+  box.style.display = "block";
+}
+
+/* ---------- DEPENSES (SORTIES DE CAISSE) ---------- */
+function enregistrerDepense(){
+  const caisse = document.getElementById("depenseCaisse").value;
+  const montant = parseFloat(document.getElementById("depenseMontant").value);
+  const motif = document.getElementById("depenseMotif").value.trim();
+  if(!montant || montant<=0){ toast("Montant invalide."); return; }
+  if(!motif){ toast("Veuillez indiquer un motif."); return; }
+
+  data.depenses.unshift({
+    id: uid(),
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    caisse, montant, motif
+  });
+  document.getElementById("depenseMontant").value = "";
+  document.getElementById("depenseMotif").value = "";
+  saveData();
+  renderAll();
+  toast("Dépense enregistrée : -"+fmt(montant)+" (n'affecte pas les caisses)");
+}
+
+function supprimerDepense(id){
+  showModal("Supprimer la dépense", "Supprimer cette dépense de l'historique ?", {
+    confirmLabel:"Supprimer",
+    onConfirm:()=>{
+      data.depenses = data.depenses.filter(d=>d.id!==id);
+      saveData();
+      renderAll();
+      toast("Dépense supprimée.");
+    }
+  });
+}
+
+const NOMS_CAISSES = { playstation:"🎮 PlayStation", tasshilat:"💳 Tasshilat", commerce:"🛒 Commerce", general:"💰 Général" };
+
+function renderDepenses(){
+  const body = document.getElementById("depensesBody");
+  if(!body) return;
+  body.innerHTML = "";
+  data.depenses.slice(0,50).forEach(d=>{
+    body.innerHTML += `<tr>
+      <td>${d.date}</td><td>${NOMS_CAISSES[d.caisse]||d.caisse}</td><td>${d.motif}</td>
+      <td class="amount" style="color:var(--danger);">-${fmt(d.montant)}</td>
+      <td><button class="btn small danger" onclick="supprimerDepense('${d.id}')">🗑</button></td>
+    </tr>`;
+  });
+  const emptyEl = document.getElementById("depensesEmpty");
+  if(emptyEl) emptyEl.style.display = data.depenses.length? "none":"block";
+
+  const totalEl = document.getElementById("depensesTotalGlobal");
+  if(totalEl){
+    const total = data.depenses.reduce((s,d)=>s+d.montant, 0);
+    totalEl.textContent = fmt(total);
+  }
+}
+
+/* ---------- RAPPORT PAR PERIODE (jour / semaine / mois / année) ---------- */
+function getPeriodeRange(dateStr, type){
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const base = new Date(y, m-1, d, 0,0,0,0);
+  let start, end;
+  if(type === "semaine"){
+    const jour = base.getDay(); // 0=dimanche .. 6=samedi
+    const decalage = (jour===0) ? -6 : (1-jour);
+    start = new Date(base); start.setDate(start.getDate()+decalage);
+    end = new Date(start); end.setDate(end.getDate()+7);
+  } else if(type === "mois"){
+    start = new Date(y, m-1, 1);
+    end = new Date(y, m, 1);
+  } else if(type === "annee"){
+    start = new Date(y, 0, 1);
+    end = new Date(y+1, 0, 1);
+  } else { // jour
+    start = base;
+    end = new Date(base); end.setDate(end.getDate()+1);
+  }
+  return {start:start.getTime(), end:end.getTime()};
+}
+
+function calculerRevenuPeriode(startTs, endTs){
+  let total = 0;
+  data.psHistory.forEach(h=>{ if(h.ts>=startTs && h.ts<endTs) total+=h.montant; });
+  data.tashHistory.forEach(h=>{ if(h.ts>=startTs && h.ts<endTs) total+=h.commission; });
+  data.ventesHistory.forEach(v=>{ if(v.ts>=startTs && v.ts<endTs) total+=v.montant; });
+  data.reparations.forEach(r=>{
+    if(r.ts>=startTs && r.ts<endTs) total+=r.acompte;
+    if(r.montantFinal && r.recupTs>=startTs && r.recupTs<endTs) total+=r.montantFinal;
+  });
+  return total;
+}
+
+function calculerDepensesPeriode(startTs, endTs){
+  return data.depenses.filter(d=>d.ts>=startTs && d.ts<endTs).reduce((s,d)=>s+d.montant, 0);
+}
+
+function calculerVentesParProduit(startTs, endTs){
+  const map = {};
+  data.ventesHistory.forEach(v=>{
+    if(!v.ts || v.ts<startTs || v.ts>=endTs) return;
+    if(!map[v.produit]) map[v.produit] = {qte:0, montant:0};
+    map[v.produit].qte += v.qte;
+    map[v.produit].montant += v.montant;
+  });
+  return Object.entries(map)
+    .map(([nom, d])=>({nom, qte:d.qte, montant:d.montant}))
+    .sort((a,b)=>b.montant-a.montant);
+}
+
+function renderRapportPeriode(){
+  const dateInput = document.getElementById("periodeDate");
+  const typeSelect = document.getElementById("periodeType");
+  const box = document.getElementById("rapportPeriodeBox");
+  if(!dateInput || !typeSelect || !box) return;
+
+  if(!dateInput.value){
+    const now = new Date();
+    dateInput.value = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+  }
+
+  const {start, end} = getPeriodeRange(dateInput.value, typeSelect.value);
+  const revenu = calculerRevenuPeriode(start, end);
+  const depenses = calculerDepensesPeriode(start, end);
+  const net = revenu - depenses;
+  const labels = {jour:"ce jour", semaine:"cette semaine", mois:"ce mois", annee:"cette année"};
+  const lbl = labels[typeSelect.value] || "";
+  const ventes = calculerVentesParProduit(start, end);
+
+  let ventesHtml = `<p style="margin:12px 0 4px; font-weight:700;">🛒 Produits vendus (${lbl})</p>`;
+  if(ventes.length === 0){
+    ventesHtml += `<p style="margin:4px 0; color:var(--text-dim); font-size:13px;">Aucune vente sur cette période.</p>`;
+  } else {
+    ventesHtml += `<table><thead><tr><th>Produit</th><th>Qté</th><th>Montant</th></tr></thead><tbody>`;
+    ventes.forEach(v=>{
+      ventesHtml += `<tr><td>${v.nom}</td><td>${v.qte}</td><td class="amount">${fmt(v.montant)}</td></tr>`;
+    });
+    ventesHtml += `</tbody></table>`;
+  }
+
+  box.innerHTML = `
+    <p style="margin:4px 0;">💰 Revenu (${lbl}) : <strong>${fmt(revenu)}</strong></p>
+    <p style="margin:4px 0;">💸 Dépenses (${lbl}) : <strong style="color:var(--danger);">-${fmt(depenses)}</strong></p>
+    <p style="margin:10px 0 0; padding-top:8px; border-top:1px solid var(--border); font-weight:700;">Net : ${fmt(net)}</p>
+    ${ventesHtml}
+  `;
+}
+
+function cloturerLaJournee(){
+  showModal("Clôturer la journée", "Vider les 3 caisses (PlayStation, Tasshilat, Commerce) d'un coup ? L'historique et les rapports par période restent intacts, seuls les soldes affichés sont remis à zéro.", {
+    confirmLabel:"Terminer la journée",
+    onConfirm:()=>{
+      data.caisses.playstation = 0;
+      data.caisses.tasshilat = 0;
+      data.caisses.commerce = 0;
+      saveData();
+      renderAll();
+      toast("Journée clôturée, les 3 caisses sont à zéro.");
+    }
+  });
+}
+
+function viderCaisse(type){
+  showModal("Vider la caisse", "Confirmer la clôture / le vidage de la caisse '"+type+"' ? Le montant sera remis à 0.", {
+    confirmLabel:"Vider",
+    onConfirm:()=>{
+      data.caisses[type] = 0;
+      saveData();
+      renderAll();
+      toast("Caisse vidée.");
+    }
+  });
+}
+
+/* ---------- PLAYSTATION ---------- */
+function ajouterStation(){
+  showModal("Nouveau poste", "Nom du nouveau poste :", {
+    withInput:true, placeholder:"Ex: Poste 3", confirmLabel:"Ajouter",
+    onConfirm:(nom)=>{
+      nom = (nom||"").trim();
+      if(!nom) return;
+      data.psStations.push({id:uid(), nom, mode:"heure", tarifHeure:10, tarifMatch:3, status:"libre", startTime:null, matchCount:0});
+      saveData();
+      renderPlaystation();
+    }
+  });
+}
+
+function supprimerStation(id){
+  showModal("Supprimer le poste", "Supprimer ce poste ?", {
+    confirmLabel:"Supprimer",
+    onConfirm:()=>{
+      data.psStations = data.psStations.filter(s=>s.id!==id);
+      saveData();
+      renderPlaystation();
+    }
+  });
+}
+
+function changerMode(id, mode){
+  const st = data.psStations.find(s=>s.id===id);
+  st.mode = mode;
+  // Le mode "match" n'a pas d'état occupé/chrono : on repart toujours propre.
+  if(mode === "match" || st.status === "occupe"){
+    st.status = "libre";
+    st.startTime = null;
+    st.matchCount = 0;
+    st.dureeMinutes = null;
+    st.notifie = false;
+  }
+  saveData();
+  renderPlaystation();
+}
+
+function majTarif(id, champ, val){
+  const st = data.psStations.find(s=>s.id===id);
+  st[champ] = parseFloat(val)||0;
+  saveData();
+}
+
+function updateDureeCalculee(id){
+  const st = data.psStations.find(s=>s.id===id);
+  const input = document.getElementById("montantPaye-"+id);
+  const out = document.getElementById("dureeCalculee-"+id);
+  if(!st || !input || !out) return;
+  const montant = parseFloat(input.value) || 0;
+  if(montant<=0 || !st.tarifHeure || st.tarifHeure<=0){ out.textContent = "—"; return; }
+  const totalMin = Math.round((montant/st.tarifHeure)*60);
+  const h = Math.floor(totalMin/60);
+  const m = totalMin%60;
+  out.textContent = String(h).padStart(2,"0")+"h"+String(m).padStart(2,"0");
+}
+
+function demarrerAvecMontant(id){
+  const st = data.psStations.find(s=>s.id===id);
+  const input = document.getElementById("montantPaye-"+id);
+  const montant = parseFloat(input.value);
+  if(!montant || montant<=0){ toast("Veuillez indiquer le montant payé."); return; }
+  if(!st.tarifHeure || st.tarifHeure<=0){ toast("Définissez d'abord un tarif/heure valide."); return; }
+  const dureeMinutes = Math.round((montant/st.tarifHeure)*60);
+  st.status = "occupe";
+  st.startTime = Date.now();
+  st.matchCount = 0;
+  st.dureeMinutes = dureeMinutes;
+  st.notifie = false;
+  saveData();
+  renderPlaystation();
+  if("Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission();
+  }
+  const h = Math.floor(dureeMinutes/60), m = dureeMinutes%60;
+  toast("Session démarrée pour "+fmt(montant)+" — "+String(h).padStart(2,"0")+"h"+String(m).padStart(2,"0")+".");
+}
+
+function demarrerStation(id){
+  const st = data.psStations.find(s=>s.id===id);
+  if(st.mode === "heure"){
+    showModal("Démarrer — "+st.nom, "Durée réservée en minutes (laisser vide pour un compteur libre, sans durée fixe) :", {
+      withInput:true, inputType:"number", placeholder:"Ex: 60",
+      confirmLabel:"Démarrer",
+      onConfirm:(val)=>{
+        const duree = parseInt(val);
+        st.status = "occupe";
+        st.startTime = Date.now();
+        st.matchCount = 0;
+        st.dureeMinutes = (duree && duree>0) ? duree : null;
+        st.notifie = false;
+        saveData();
+        renderPlaystation();
+        if(st.dureeMinutes && "Notification" in window && Notification.permission === "default"){
+          Notification.requestPermission();
+        }
+      }
+    });
+  } else {
+    st.status = "occupe";
+    st.startTime = Date.now();
+    st.matchCount = 0;
+    st.dureeMinutes = null;
+    st.notifie = false;
+    saveData();
+    renderPlaystation();
+  }
+}
+
+function encaisserMatchDirect(id){
+  const st = data.psStations.find(s=>s.id===id);
+  if(!st) return;
+  const qteInput = document.getElementById("matchQte-"+id);
+  const qte = parseInt(qteInput.value);
+  if(!qte || qte<=0){ toast("Veuillez indiquer le nombre de matchs."); return; }
+  const montant = qte * st.tarifMatch;
+  data.caisses.playstation += montant;
+  data.psHistory.unshift({
+    id: uid(),
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    poste: st.nom,
+    detail: qte+" match(s)",
+    montant
+  });
+  qteInput.value = "";
+  saveData();
+  renderAll();
+  toast("Encaissé : "+fmt(montant)+" ("+qte+" match(s))");
+}
+
+function calculerCout(st){
+  if(st.mode === "match"){
+    return st.matchCount * st.tarifMatch;
+  } else {
+    if(!st.startTime) return 0;
+    const heures = (Date.now() - st.startTime) / 3600000;
+    return heures * st.tarifHeure;
+  }
+}
+
+function terminerEtEncaisser(id){
+  const st = data.psStations.find(s=>s.id===id);
+  const cout = calculerCout(st);
+  const montantFinal = Math.round(cout*100)/100;
+  showModal("Encaisser", "Encaisser "+fmt(montantFinal)+" pour "+st.nom+" ?", {
+    confirmLabel:"Encaisser",
+    onConfirm:()=>{
+      data.caisses.playstation += montantFinal;
+      data.psHistory.unshift({
+        id: uid(),
+        date: new Date().toLocaleString('fr-FR'),
+        ts: Date.now(),
+        poste: st.nom,
+        detail: st.mode==="match" ? (st.matchCount+" match(s)") : "Session horaire",
+        montant: montantFinal
+      });
+      st.status = "libre";
+      st.startTime = null;
+      st.matchCount = 0;
+      st.dureeMinutes = null;
+      st.notifie = false;
+      saveData();
+      renderAll();
+      toast("Encaissé : "+fmt(montantFinal));
+    }
+  });
+}
+
+let psTimerInterval = null;
+
+function msToHMS(ms){
+  ms = Math.max(0, ms);
+  const h = String(Math.floor(ms/3600000)).padStart(2,"0");
+  const m = String(Math.floor((ms%3600000)/60000)).padStart(2,"0");
+  const s = String(Math.floor((ms%60000)/1000)).padStart(2,"0");
+  return h+":"+m+":"+s;
+}
+
+function stationTimerText(st){
+  if(st.mode === "heure"){
+    if(st.status==="occupe" && st.startTime){
+      if(st.dureeMinutes){
+        const remaining = st.dureeMinutes*60000 - (Date.now()-st.startTime);
+        return remaining<=0 ? "⏰ 00:00:00" : msToHMS(remaining);
+      }
+      return msToHMS(Date.now()-st.startTime);
+    }
+    return "00:00:00";
+  }
+  return st.matchCount + " match(s)";
+}
+
+/* Reconstruit toute la liste (boutons compris). Appelée uniquement quand les
+   données changent (démarrage, arrêt, ajout, suppression, changement de mode/tarif). */
+function renderPlaystation(){
+  const box = document.getElementById("stationsList");
+  box.innerHTML = "";
+  data.psStations.forEach(st=>{
+    const div = document.createElement("div");
+
+    if(st.mode === "match"){
+      div.className = "station";
+      div.innerHTML = `
+        <div class="top">
+          <strong>${st.nom}</strong>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <select onchange="changerMode('${st.id}', this.value)">
+            <option value="heure">Tarif à l'heure</option>
+            <option value="match" selected>Tarif au match</option>
+          </select>
+        </div>
+        <div><label>Tarif par match (DH)</label><input type="number" value="${st.tarifMatch}" onchange="majTarif('${st.id}','tarifMatch',this.value)"></div>
+        <div style="margin-top:8px;"><label>Nombre de matchs joués</label><input type="number" id="matchQte-${st.id}" placeholder="Ex: 3" min="1"></div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn small" onclick="encaisserMatchDirect('${st.id}')">➕ Ajouter & Encaisser</button>
+          <button class="btn small danger" onclick="supprimerStation('${st.id}')">🗑</button>
+        </div>
+      `;
+      box.appendChild(div);
+      return;
+    }
+
+    const cout = calculerCout(st);
+    div.className = "station" + (st.status==="occupe" ? " occupe-card" : "");
+    const dureeInfo = (st.mode==="heure" && st.dureeMinutes)
+      ? `<div class="cost">Durée réservée : ${st.dureeMinutes} min</div>` : "";
+    const tempsEcoule = st.mode==="heure" && st.dureeMinutes && st.status==="occupe" &&
+      (st.dureeMinutes*60000 - (Date.now()-st.startTime)) <= 0;
+
+    div.innerHTML = `
+      <div class="top">
+        <strong>${st.nom}</strong>
+        <span class="pill ${st.status}">${st.status==="occupe"?"Occupé":"Libre"}</span>
+      </div>
+      <div class="timer" id="timer-${st.id}"${tempsEcoule?' style="color:var(--danger);"':''}>${stationTimerText(st)}</div>
+      ${dureeInfo}
+      <div class="cost" id="cost-${st.id}">Coût estimé : ${fmt(cout)}</div>
+      <div class="row" style="margin-top:8px;">
+        <select onchange="changerMode('${st.id}', this.value)" ${st.status==="occupe"?"disabled":""}>
+          <option value="heure" ${st.mode==="heure"?"selected":""}>Tarif à l'heure</option>
+          <option value="match" ${st.mode==="match"?"selected":""}>Tarif au match</option>
+        </select>
+      </div>
+      <div class="row">
+        <div><label>Tarif/heure (DH)</label><input type="number" value="${st.tarifHeure}" onchange="majTarif('${st.id}','tarifHeure',this.value)"></div>
+        <div><label>Tarif/match (DH)</label><input type="number" value="${st.tarifMatch}" onchange="majTarif('${st.id}','tarifMatch',this.value)"></div>
+      </div>
+      ${st.status==="libre" ? `
+      <div class="row" style="margin-top:8px;">
+        <div><label>💰 Montant payé (DH)</label><input type="number" id="montantPaye-${st.id}" placeholder="Ex: 20" oninput="updateDureeCalculee('${st.id}')"></div>
+        <div><label>= Durée de jeu</label><div id="dureeCalculee-${st.id}" style="padding:10px 0; font-weight:700;">—</div></div>
+      </div>` : ""}
+      <div class="row" style="margin-top:8px;">
+        ${st.status==="libre" ? `<button class="btn small" onclick="demarrerStation('${st.id}')">▶ Démarrer</button>` : ""}
+        ${st.status==="libre" ? `<button class="btn small secondary" onclick="demarrerAvecMontant('${st.id}')">▶ Démarrer avec ce montant</button>` : ""}
+        ${st.status==="occupe" ? `<button class="btn small danger" onclick="arreterSansEncaisser('${st.id}')">✖ Arrêter (sans encaisser)</button>` : ""}
+        ${st.status==="occupe" ? `<button class="btn small" onclick="terminerEtEncaisser('${st.id}')">⏹ Terminer & Encaisser</button>` : ""}
+        <button class="btn small danger" onclick="supprimerStation('${st.id}')">🗑</button>
+      </div>
+    `;
+    box.appendChild(div);
+  });
+
+  const body = document.getElementById("psHistoryBody");
+  body.innerHTML = "";
+  data.psHistory.slice(0,5).forEach(h=>{
+    body.innerHTML += `<tr><td>${h.date}</td><td>${h.poste}</td><td>${h.detail}</td><td class="amount">${fmt(h.montant)}</td></tr>`;
+  });
+  document.getElementById("psHistoryEmpty").style.display = data.psHistory.length? "none":"block";
+
+  if(psTimerInterval) clearInterval(psTimerInterval);
+  if(data.psStations.some(s=>s.status==="occupe" && s.mode==="heure")){
+    psTimerInterval = setInterval(tickPlaystationTimers, 1000);
+  }
+}
+
+/* Appelée chaque seconde : ne touche qu'au texte du chrono, jamais aux boutons,
+   pour que ceux-ci restent toujours cliquables pendant que le minuteur tourne. */
+function tickPlaystationTimers(){
+  data.psStations.forEach(st=>{
+    if(st.status!=="occupe" || st.mode!=="heure") return;
+    const timerEl = document.getElementById("timer-"+st.id);
+    const costEl = document.getElementById("cost-"+st.id);
+    if(timerEl){
+      timerEl.textContent = stationTimerText(st);
+      if(st.dureeMinutes){
+        const remaining = st.dureeMinutes*60000 - (Date.now()-st.startTime);
+        timerEl.style.color = remaining<=0 ? "var(--danger)" : "";
+      }
+    }
+    if(costEl) costEl.textContent = "Coût estimé : " + fmt(calculerCout(st));
+
+    if(st.dureeMinutes && !st.notifie){
+      const remaining = st.dureeMinutes*60000 - (Date.now()-st.startTime);
+      if(remaining<=0){
+        st.notifie = true;
+        saveData();
+        declencherAlerteFinDeTemps(st);
+      }
+    }
+  });
+}
+
+function declencherAlerteFinDeTemps(st){
+  toast("⏰ Temps écoulé pour "+st.nom+" !", 4000);
+  try{
+    if("Notification" in window && Notification.permission === "granted"){
+      new Notification("⏰ Temps écoulé", { body: "La session de " + st.nom + " est terminée." });
+    }
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([300,150,300]);
+  jouerSonAlerte();
+}
+
+function jouerSonAlerte(){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const beep = (delay)=>{
+      setTimeout(()=>{
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = "sine";
+        o.frequency.value = 880;
+        g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        o.start();
+        o.stop(ctx.currentTime + 0.4);
+      }, delay);
+    };
+    beep(0); beep(500);
+  }catch(e){}
+}
+
+function arreterSansEncaisser(id){
+  const st = data.psStations.find(s=>s.id===id);
+  showModal("Arrêter sans encaisser", "Arrêter la session de "+st.nom+" SANS encaisser (annulation) ?", {
+    confirmLabel:"Arrêter",
+    onConfirm:()=>{
+      st.status = "libre";
+      st.startTime = null;
+      st.matchCount = 0;
+      st.dureeMinutes = null;
+      st.notifie = false;
+      saveData();
+      renderAll();
+      toast("Session arrêtée sans encaissement.");
+    }
+  });
+}
+
+/* ---------- TASSHILAT ---------- */
+function rechargerTasshilat(){
+  const montant = parseFloat(document.getElementById("rechargeMontant").value);
+  if(!montant || montant<=0){ toast("Montant invalide"); return; }
+  data.tasshilatSolde += montant;
+  document.getElementById("rechargeMontant").value = "";
+  saveData();
+  renderAll();
+  toast("Compte rechargé de "+fmt(montant));
+}
+
+function ajouterOperationTasshilat(){
+  const client = document.getElementById("tashClient").value.trim();
+  const montant = parseFloat(document.getElementById("tashMontant").value);
+  const commission = parseFloat(document.getElementById("tashCommission").value) || 0;
+  if(!client || !montant || montant<=0){ toast("Veuillez remplir le client et le montant."); return; }
+  if(montant > data.tasshilatSolde){
+    showModal("Solde insuffisant", "⚠️ Le solde disponible ("+fmt(data.tasshilatSolde)+") est insuffisant pour ce paiement de "+fmt(montant)+". Continuer quand même ?", {
+      confirmLabel:"Continuer",
+      onConfirm:()=>finaliserOperationTasshilat(client, montant, commission)
+    });
+    return;
+  }
+  finaliserOperationTasshilat(client, montant, commission);
+}
+
+function finaliserOperationTasshilat(client, montant, commission){
+  data.tasshilatSolde -= montant;
+  data.caisses.tasshilat += commission;
+  data.tashHistory.unshift({
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    client, montant, commission
+  });
+  document.getElementById("tashClient").value = "";
+  document.getElementById("tashMontant").value = "";
+  document.getElementById("tashCommission").value = "";
+  saveData();
+  renderAll();
+  toast("Opération enregistrée.");
+}
+
+function renderTasshilat(){
+  document.getElementById("soldeTashDisplay").textContent = fmt(data.tasshilatSolde);
+  const body = document.getElementById("tashHistoryBody");
+  body.innerHTML = "";
+  data.tashHistory.slice(0,50).forEach(h=>{
+    body.innerHTML += `<tr><td>${h.date}</td><td>${h.client}</td><td class="amount">${fmt(h.montant)}</td><td class="amount">${fmt(h.commission)}</td></tr>`;
+  });
+  document.getElementById("tashHistoryEmpty").style.display = data.tashHistory.length? "none":"block";
+}
+
+/* ---------- STOCK / ACCESSOIRES ---------- */
+let editingProductId = null;
+
+function renderSelectProduitExistant(){
+  const sel = document.getElementById("stockProduitExistant");
+  if(!sel) return;
+  const valASelectionner = editingProductId || "";
+  sel.innerHTML = '<option value="">— Nouveau produit —</option>' +
+    data.stock.map(p=>`<option value="${p.id}">${p.nom} (stock : ${p.qte})</option>`).join("");
+  sel.value = valASelectionner;
+}
+
+function payerAchatStock(caisseChoisie, montant, motif, callback){
+  if(caisseChoisie === 'aucune' || !montant || montant<=0){ callback(); return; }
+  data.depenses.unshift({
+    id: uid(),
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    caisse: caisseChoisie, montant, motif
+  });
+  callback();
+}
+
+function ajouterProduit(){
+  const nom = document.getElementById("stockNom").value.trim();
+  const prixAchat = parseFloat(document.getElementById("stockPrixAchat").value);
+  const prixVente = parseFloat(document.getElementById("stockPrixVente").value);
+  const qte = parseInt(document.getElementById("stockQte").value);
+  if(!nom || isNaN(prixAchat) || isNaN(prixVente) || isNaN(qte)){ toast("Veuillez remplir tous les champs."); return; }
+
+  const finir = ()=>{
+    if(editingProductId){
+      const p = data.stock.find(x=>x.id===editingProductId);
+      if(p){
+        p.nom = nom; p.prixAchat = prixAchat; p.prixVente = prixVente; p.qte = qte;
+        toast("Produit modifié.");
+      }
+      annulerEditionProduit();
+    } else {
+      data.stock.push({id:uid(), nom, prixAchat, prixVente, qte});
+      toast("Produit ajouté.");
+    }
+    document.getElementById("stockNom").value = "";
+    document.getElementById("stockPrixAchat").value = "";
+    document.getElementById("stockPrixVente").value = "";
+    document.getElementById("stockQte").value = "";
+    saveData();
+    renderAll();
+  };
+
+  if(editingProductId){
+    // Correction d'une fiche existante : pas de décompte automatique, on ne touche pas aux dépenses.
+    finir();
+  } else {
+    const caisseChoisie = document.getElementById("stockPaiementCaisse").value;
+    const coutTotal = prixAchat * qte;
+    payerAchatStock(caisseChoisie, coutTotal, "Achat stock : "+nom, finir);
+  }
+}
+
+function commencerEditionProduit(id){
+  if(!id){ annulerEditionProduit(); return; }
+  const p = data.stock.find(x=>x.id===id);
+  if(!p) return;
+  editingProductId = id;
+  document.getElementById("stockNom").value = p.nom;
+  document.getElementById("stockPrixAchat").value = p.prixAchat;
+  document.getElementById("stockPrixVente").value = p.prixVente;
+  document.getElementById("stockQte").value = p.qte;
+  document.getElementById("btnAjouterProduit").textContent = "💾 Enregistrer les modifications";
+  document.getElementById("btnAnnulerEdition").style.display = "inline-block";
+  const sel = document.getElementById("stockProduitExistant");
+  if(sel) sel.value = id;
+  document.getElementById("stockNom").scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+function annulerEditionProduit(){
+  editingProductId = null;
+  document.getElementById("stockNom").value = "";
+  document.getElementById("stockPrixAchat").value = "";
+  document.getElementById("stockPrixVente").value = "";
+  document.getElementById("stockQte").value = "";
+  document.getElementById("btnAjouterProduit").textContent = "Ajouter au stock";
+  document.getElementById("btnAnnulerEdition").style.display = "none";
+  const sel = document.getElementById("stockProduitExistant");
+  if(sel) sel.value = "";
+}
+
+function renderVenteSelect(){
+  const sel = document.getElementById("venteProduit");
+  if(!sel) return;
+  const prevVal = sel.value;
+  if(data.stock.length===0){
+    sel.innerHTML = '<option value="">Aucun produit en stock</option>';
+  } else {
+    const trie = data.stock.slice().sort((a,b)=> (b.favori?1:0) - (a.favori?1:0));
+    sel.innerHTML = trie.map(p=>
+      `<option value="${p.id}">${p.favori?'⭐ ':''}${p.nom} — ${fmt(p.prixVente)} (stock: ${p.qte})</option>`
+    ).join("");
+    if(prevVal && data.stock.some(p=>p.id===prevVal)) sel.value = prevVal;
+  }
+  const prixInput = document.getElementById("ventePrixUnitaire");
+  if(prixInput && prixInput.value === ""){
+    onProduitVenteChange();
+  } else {
+    updateVenteTotal();
+  }
+}
+
+function onProduitVenteChange(){
+  const sel = document.getElementById("venteProduit");
+  const p = data.stock.find(x=>x.id===sel.value);
+  const prixInput = document.getElementById("ventePrixUnitaire");
+  if(p) prixInput.value = p.prixVente;
+  updateVenteTotal();
+}
+
+function updateVenteTotal(){
+  const totalEl = document.getElementById("venteTotal");
+  if(!totalEl) return;
+  const prixInput = document.getElementById("ventePrixUnitaire");
+  const prix = parseFloat(prixInput.value) || 0;
+  const qte = parseInt(document.getElementById("venteQte").value) || 0;
+  totalEl.textContent = fmt(prix*qte);
+
+  const sel = document.getElementById("venteProduit");
+  const p = data.stock.find(x=>x.id===sel.value);
+  if(p && prix !== p.prixVente){
+    prixInput.style.background = "#fef3c7";
+    prixInput.style.color = "#78350f";
+    prixInput.style.borderColor = "var(--tash)";
+  } else {
+    prixInput.style.background = "";
+    prixInput.style.color = "";
+    prixInput.style.borderColor = "";
+  }
+}
+
+function enregistrerVente(){
+  const sel = document.getElementById("venteProduit");
+  if(!sel.value){ toast("Aucun produit en stock à vendre."); return; }
+  const p = data.stock.find(x=>x.id===sel.value);
+  const qte = parseInt(document.getElementById("venteQte").value);
+  const prixUnitaire = parseFloat(document.getElementById("ventePrixUnitaire").value);
+  if(!qte || qte<=0){ toast("Quantité invalide."); return; }
+  if(isNaN(prixUnitaire) || prixUnitaire<0){ toast("Prix de vente invalide."); return; }
+  if(qte > p.qte){ toast("Stock insuffisant (disponible : "+p.qte+")."); return; }
+  p.qte -= qte;
+  const montant = qte * prixUnitaire;
+  const profit = qte * (prixUnitaire - p.prixAchat);
+  data.caisses.commerce += montant;
+  data.ventesHistory.unshift({
+    id: uid(),
+    date: new Date().toLocaleString('fr-FR'),
+    ts: Date.now(),
+    produit: p.nom, qte, montant, profit, prixUnitaire
+  });
+  saveData();
+  document.getElementById("venteQte").value = "1";
+  document.getElementById("ventePrixUnitaire").value = p.prixVente;
+  renderAll();
+  if(p.qte <= 3){
+    toast("Vente enregistrée : "+fmt(montant)+" (bénéfice : "+fmt(profit)+") — ⚠️ Stock faible pour "+p.nom+" ("+p.qte+" restant(s))", 5000);
+    try{
+      if("Notification" in window && Notification.permission === "granted"){
+        new Notification("⚠️ Stock faible", { body: p.nom + " : il ne reste que " + p.qte + " unité(s)." });
+      }
+    }catch(e){}
+  } else {
+    toast("Vente enregistrée : "+fmt(montant)+" (bénéfice : "+fmt(profit)+")");
+  }
+}
+
+function supprimerProduit(id){
+  showModal("Supprimer le produit", "Supprimer ce produit du stock ?", {
+    confirmLabel:"Supprimer",
+    onConfirm:()=>{
+      data.stock = data.stock.filter(p=>p.id!==id);
+      if(editingProductId === id) annulerEditionProduit();
+      saveData();
+      renderStock();
+    }
+  });
+}
+
+function toggleFavori(id){
+  const p = data.stock.find(x=>x.id===id);
+  if(!p) return;
+  p.favori = !p.favori;
+  saveData();
+  renderStock();
+}
+
+function imprimerInventaire(){
+  if(data.stock.length===0){ toast("Aucun produit en stock."); return; }
+  const lignes = data.stock.map(p=>
+    (p.favori?'⭐ ':'')+p.nom+" — Achat: "+fmt(p.prixAchat)+" | Vente: "+fmt(p.prixVente)+" | Qté: "+p.qte
+  );
+  printReceipt("Inventaire du stock", lignes);
+}
+
+function renderStock(){
+  renderVenteSelect();
+  renderSelectProduitExistant();
+  const SEUIL_BAS = 3;
+  const body = document.getElementById("stockBody");
+  body.innerHTML = "";
+  data.stock.forEach(p=>{
+    const bas = p.qte <= SEUIL_BAS;
+    body.innerHTML += `<tr${bas ? ' style="color:var(--danger);"' : ''}>
+      <td><button class="btn small secondary" onclick="toggleFavori('${p.id}')">${p.favori?'⭐':'☆'}</button></td>
+      <td>${p.nom}${bas ? ' ⚠️' : ''}</td><td class="amount">${fmt(p.prixAchat)}</td><td class="amount">${fmt(p.prixVente)}</td><td>${p.qte}</td>
+      <td><button class="btn small secondary" onclick="commencerEditionProduit('${p.id}')">✏️</button> <button class="btn small danger" onclick="supprimerProduit('${p.id}')">🗑</button></td>
+    </tr>`;
+  });
+  document.getElementById("stockEmpty").style.display = data.stock.length? "none":"block";
+
+  const histBody = document.getElementById("venteHistoryBody");
+  histBody.innerHTML = "";
+  const searchEl = document.getElementById("venteSearch");
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
+  const filtered = q ? data.ventesHistory.filter(v=>v.produit.toLowerCase().includes(q)) : data.ventesHistory;
+  filtered.slice(0,50).forEach(v=>{
+    histBody.innerHTML += `<tr><td>${v.date}</td><td>${v.produit}</td><td>${v.qte}</td><td class="amount">${fmt(v.montant)}</td><td class="amount">${fmt(v.profit)}</td><td><button class="btn small secondary" onclick="imprimerRecuVente('${v.id}')">🖨</button> <button class="btn small secondary" onclick="partagerRecuVenteWhatsApp('${v.id}')">📲</button></td></tr>`;
+  });
+  document.getElementById("venteHistoryEmpty").style.display = filtered.length? "none":"block";
+}
+
+/* ---------- REPARATIONS ---------- */
+function ajouterReparation(){
+  const client = document.getElementById("repClient").value.trim();
+  const tel = document.getElementById("repTel").value.trim();
+  const modele = document.getElementById("repModele").value.trim();
+  const panne = document.getElementById("repPanne").value.trim();
+  const acompte = parseFloat(document.getElementById("repAcompte").value) || 0;
+  if(!client || !modele || !panne){ toast("Veuillez remplir client, modèle et panne."); return; }
+  data.reparations.unshift({
+    id:uid(), date:new Date().toLocaleString('fr-FR'), ts:Date.now(), client, tel, modele, panne,
+    acompte, montantFinal:null, recupTs:null, statut:"en cours"
+  });
+  if(acompte>0){
+    data.caisses.commerce += acompte;
+  }
+  document.getElementById("repClient").value = "";
+  document.getElementById("repTel").value = "";
+  document.getElementById("repModele").value = "";
+  document.getElementById("repPanne").value = "";
+  document.getElementById("repAcompte").value = "";
+  saveData();
+  renderAll();
+  toast("Fiche créée.");
+}
+
+function changerStatutReparation(id, statut){
+  const r = data.reparations.find(x=>x.id===id);
+  if(statut === "récupéré" && r.montantFinal===null){
+    showModal("Montant restant", "Montant restant à payer par le client (en plus de l'acompte de "+fmt(r.acompte)+") :", {
+      withInput:true, inputType:"number", inputValue:"0", confirmLabel:"Valider",
+      onConfirm:(val)=>{
+        const restant = parseFloat(val) || 0;
+        r.montantFinal = restant;
+        r.recupTs = Date.now();
+        data.caisses.commerce += restant;
+        r.statut = statut;
+        saveData();
+        renderAll();
+      },
+      onCancel:()=>renderReparations() // remet le menu déroulant à l'état réel
+    });
+    return;
+  }
+  r.statut = statut;
+  saveData();
+  renderAll();
+}
+
+function supprimerReparation(id){
+  showModal("Supprimer le ticket", "Supprimer ce ticket ?", {
+    confirmLabel:"Supprimer",
+    onConfirm:()=>{
+      data.reparations = data.reparations.filter(r=>r.id!==id);
+      saveData();
+      renderReparations();
+    }
+  });
+}
+
+function renderReparations(){
+  const box = document.getElementById("repList");
+  box.innerHTML = "";
+  data.reparations.forEach(r=>{
+    const badgeClass = r.statut==="en cours"?"encours":(r.statut==="prêt"?"pret":"recupere");
+    const div = document.createElement("div");
+    div.className = "station";
+    div.innerHTML = `
+      <div class="top">
+        <strong>${r.client}</strong>
+        <span class="badge ${badgeClass}">${r.statut}</span>
+      </div>
+      <div class="cost">📱 ${r.modele} — ${r.panne}</div>
+      <div class="cost">Tél: ${r.tel || "-"} | Acompte: ${fmt(r.acompte)}${r.montantFinal!==null?" | Reste payé: "+fmt(r.montantFinal):""}</div>
+      <div class="cost">${r.date}</div>
+      <div class="row" style="margin-top:8px;">
+        <select onchange="changerStatutReparation('${r.id}', this.value)">
+          <option value="en cours" ${r.statut==="en cours"?"selected":""}>En cours</option>
+          <option value="prêt" ${r.statut==="prêt"?"selected":""}>Prêt</option>
+          <option value="récupéré" ${r.statut==="récupéré"?"selected":""}>Récupéré</option>
+        </select>
+        <button class="btn small secondary" onclick="imprimerFicheReparation('${r.id}')">🖨</button>
+        <button class="btn small secondary" onclick="partagerFicheReparationWhatsApp('${r.id}')">📲</button>
+        <button class="btn small danger" onclick="supprimerReparation('${r.id}')">🗑</button>
+      </div>
+    `;
+    box.appendChild(div);
+  });
+  document.getElementById("repEmpty").style.display = data.reparations.length? "none":"block";
+}
+
+/* ---------- EXPORT / IMPORT ---------- */
+function exportData(){
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "sauvegarde_magasin_"+new Date().toISOString().slice(0,10)+".json";
+  a.click();
+  URL.revokeObjectURL(url);
+  data.lastBackupTs = Date.now();
+  saveData();
+  toast("Sauvegarde téléchargée.");
+}
+
+function importClick(){
+  document.getElementById("importFile").click();
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      showModal("Importer les données", "Importer ces données va remplacer toutes les données actuelles. Continuer ?", {
+        confirmLabel:"Importer",
+        onConfirm:()=>{
+          data = Object.assign(defaultData(), parsed);
+          saveData();
+          renderAll();
+          toast("Données importées avec succès.");
+        }
+      });
+    }catch(err){
+      toast("Fichier invalide.");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+/* ---------- HORLOGE EN DIRECT ---------- */
+function updateClock(){
+  const el = document.getElementById("liveClock");
+  if(!el) return;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  const timeStr = now.toLocaleTimeString('fr-FR');
+  el.textContent = dateStr + " — " + timeStr;
+}
+setInterval(updateClock, 1000);
+
+/* ---------- IMPRESSION DE REÇUS ---------- */
+function printReceipt(title, lines){
+  const area = document.getElementById("printArea");
+  area.innerHTML = `
+    <div style="font-family:monospace; max-width:320px; margin:0 auto;">
+      <h2 style="text-align:center; margin:0 0 4px;">🏪 Magasin Multi-Services</h2>
+      <p style="text-align:center; margin:0 0 10px;">${title}</p>
+      <p style="margin:0 0 8px;">${new Date().toLocaleString('fr-FR')}</p>
+      <hr>
+      ${lines.map(l=>`<p style="margin:5px 0;">${l}</p>`).join("")}
+      <hr>
+      <p style="text-align:center; margin-top:12px;">Merci de votre confiance !</p>
+    </div>
+  `;
+  window.print();
+}
+
+function partagerWhatsApp(titre, lignesTexte, telephone){
+  const texteBrut = lignesTexte.map(l=>l.replace(/<[^>]+>/g,""));
+  const texte = "🏪 Magasin Multi-Services\n"+titre+"\n"+new Date().toLocaleString('fr-FR')+"\n\n"+texteBrut.join("\n");
+  const encoded = encodeURIComponent(texte);
+  let url;
+  if(telephone && telephone.trim()){
+    let tel = telephone.replace(/[^\d+]/g, "");
+    if(tel.startsWith("0")) tel = "212" + tel.slice(1);
+    else if(tel.startsWith("+")) tel = tel.slice(1);
+    url = "https://wa.me/"+tel+"?text="+encoded;
+  } else {
+    url = "https://wa.me/?text="+encoded;
+  }
+  window.open(url, "_blank");
+}
+
+
+function imprimerRecuVente(id){
+  const v = data.ventesHistory.find(x=>x.id===id);
+  if(!v) return;
+  printReceipt("Reçu de vente", [
+    "Produit : " + v.produit,
+    "Quantité : " + v.qte,
+    "<strong>Total : " + fmt(v.montant) + "</strong>"
+  ]);
+}
+
+function partagerRecuVenteWhatsApp(id){
+  const v = data.ventesHistory.find(x=>x.id===id);
+  if(!v) return;
+  partagerWhatsApp("Reçu de vente", [
+    "Produit : " + v.produit,
+    "Quantité : " + v.qte,
+    "Total : " + fmt(v.montant)
+  ], null);
+}
+
+function imprimerFicheReparation(id){
+  const r = data.reparations.find(x=>x.id===id);
+  if(!r) return;
+  const lignes = [
+    "Client : " + r.client,
+    "Téléphone : " + (r.tel || "-"),
+    "Modèle : " + r.modele,
+    "Panne : " + r.panne,
+    "Acompte versé : " + fmt(r.acompte)
+  ];
+  if(r.montantFinal !== null) lignes.push("Reste payé : " + fmt(r.montantFinal));
+  lignes.push("Statut : " + r.statut);
+  printReceipt("Fiche de réparation", lignes);
+}
+
+function partagerFicheReparationWhatsApp(id){
+  const r = data.reparations.find(x=>x.id===id);
+  if(!r) return;
+  const lignes = [
+    "Client : " + r.client,
+    "Modèle : " + r.modele,
+    "Panne : " + r.panne,
+    "Acompte versé : " + fmt(r.acompte)
+  ];
+  if(r.montantFinal !== null) lignes.push("Reste payé : " + fmt(r.montantFinal));
+  lignes.push("Statut : " + r.statut);
+  partagerWhatsApp("Fiche de réparation", lignes, r.tel);
+}
+
+/* ---------- NOTIFICATIONS ---------- */
+function demanderPermissionNotif(){
+  if(!("Notification" in window)){
+    toast("Notifications non supportées sur cet appareil/navigateur — l'alerte sonore restera active.");
+    return;
+  }
+  if(Notification.permission === "granted"){
+    toast("🔔 Notifications déjà activées.");
+    return;
+  }
+  if(Notification.permission === "denied"){
+    toast("Notifications bloquées dans les réglages du navigateur. L'alerte sonore et à l'écran restera active.");
+    return;
+  }
+  Notification.requestPermission().then(perm=>{
+    if(perm === "granted") toast("🔔 Notifications activées !");
+    else toast("Notifications refusées — vous recevrez quand même une alerte sonore.");
+  });
+}
+
+/* ---------- RAPPEL DE STOCK FAIBLE AU DÉMARRAGE ---------- */
+function checkStockAlertOnStart(){
+  const bas = data.stock.filter(p=>p.qte<=3);
+  if(bas.length>0){
+    setTimeout(()=>{
+      const liste = bas.slice(0,3).map(p=>p.nom+" ("+p.qte+")").join(", ");
+      const suite = bas.length>3 ? " et "+(bas.length-3)+" autre(s)" : "";
+      toast("⚠️ Stock faible : "+liste+suite, 5000);
+    }, 2800);
+  }
+}
+
+/* ---------- RAPPEL DE SAUVEGARDE HEBDOMADAIRE ---------- */
+function checkBackupReminder(){
+  const seuil = 7*24*60*60*1000; // 7 jours
+  const last = data.lastBackupTs;
+  if(!last || (Date.now() - last) > seuil){
+    setTimeout(()=>{
+      const msg = last
+        ? "⚠️ Dernière sauvegarde le " + new Date(last).toLocaleDateString('fr-FR') + ". Pensez à en refaire une (⬇️)."
+        : "⚠️ Aucune sauvegarde effectuée. Pensez à exporter vos données (⬇️).";
+      toast(msg);
+    }, 1200);
+  }
+}
+/* ---------- VERROUILLAGE PAR MOT DE PASSE ---------- */
+function checkLockOnStart(){
+  const overlay = document.getElementById("lockOverlay");
+  if(data.security && data.security.pinEnabled){
+    overlay.classList.remove("hidden");
+    setTimeout(()=>document.getElementById("lockPwInput").focus(), 100);
+  } else {
+    overlay.classList.add("hidden");
+    checkBackupReminder();
+    checkStockAlertOnStart();
+  }
+}
+
+function attemptUnlock(){
+  const inp = document.getElementById("lockPwInput");
+  if(inp.value === data.security.pin){
+    document.getElementById("lockOverlay").classList.add("hidden");
+    inp.value = "";
+    checkBackupReminder();
+    checkStockAlertOnStart();
+  } else {
+    toast("Mot de passe incorrect.");
+    inp.value = "";
+    inp.focus();
+  }
+}
+
+function openSecuritySettings(){
+  if(data.security && data.security.pinEnabled){
+    showModal("Sécurité", "Un mot de passe est actif. Laissez le champ vide et confirmez pour le désactiver, ou entrez-en un nouveau pour le remplacer.", {
+      withInput:true, inputType:"password", placeholder:"Nouveau mot de passe (vide = désactiver)", confirmLabel:"Valider",
+      onConfirm:(val)=>{
+        if(val && val.trim().length>0){
+          data.security.pin = val.trim();
+          data.security.pinEnabled = true;
+          toast("Mot de passe mis à jour.");
+        } else {
+          data.security.pin = "";
+          data.security.pinEnabled = false;
+          toast("Protection par mot de passe désactivée.");
+        }
+        saveData();
+      }
+    });
+  } else {
+    showModal("Activer la protection", "Définissez un mot de passe pour protéger l'accès à l'application.", {
+      withInput:true, inputType:"password", placeholder:"Nouveau mot de passe", confirmLabel:"Activer",
+      onConfirm:(val)=>{
+        if(!val || val.trim().length===0){ toast("Mot de passe vide, non activé."); return; }
+        data.security.pin = val.trim();
+        data.security.pinEnabled = true;
+        saveData();
+        toast("Protection par mot de passe activée.");
+      }
+    });
+  }
+}
+
+/* ---------- STATISTIQUES MENSUELLES ---------- */
+/* ---------- GRAPHIQUE 7 DERNIERS JOURS ---------- */
+function renderChart7Jours(){
+  const box = document.getElementById("chartWrap");
+  if(!box) return;
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate()-i);
+    days.push(d);
+  }
+  const data7 = days.map(d=>{
+    const start = d.getTime();
+    const end = start + 24*3600*1000;
+    let ps=0, tash=0, com=0;
+    data.psHistory.forEach(h=>{ if(h.ts>=start && h.ts<end) ps+=h.montant; });
+    data.tashHistory.forEach(h=>{ if(h.ts>=start && h.ts<end) tash+=h.commission; });
+    data.ventesHistory.forEach(v=>{ if(v.ts>=start && v.ts<end) com+=v.montant; });
+    data.reparations.forEach(r=>{
+      if(r.ts>=start && r.ts<end) com+=r.acompte;
+      if(r.montantFinal && r.recupTs>=start && r.recupTs<end) com+=r.montantFinal;
+    });
+    return {d, ps, tash, com};
+  });
+  const maxVal = Math.max(1, ...data7.map(x=>Math.max(x.ps, x.tash, x.com)));
+  box.innerHTML = data7.map(x=>{
+    const hPs = Math.round((x.ps/maxVal)*100);
+    const hTash = Math.round((x.tash/maxVal)*100);
+    const hCom = Math.round((x.com/maxVal)*100);
+    const lbl = x.d.toLocaleDateString('fr-FR', {weekday:'short'});
+    return `<div class="chart-day">
+      <div class="chart-bars">
+        <div class="chart-bar" style="height:${hPs}%; background:var(--ps);" title="PlayStation : ${fmt(x.ps)}"></div>
+        <div class="chart-bar" style="height:${hTash}%; background:var(--tash);" title="Tasshilat : ${fmt(x.tash)}"></div>
+        <div class="chart-bar" style="height:${hCom}%; background:var(--com);" title="Commerce : ${fmt(x.com)}"></div>
+      </div>
+      <div class="lbl">${lbl}</div>
+    </div>`;
+  }).join("");
+}
+
+function monthRange(offsetMonths){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth()+offsetMonths, 1, 0,0,0,0);
+  const end = new Date(now.getFullYear(), now.getMonth()+offsetMonths+1, 1, 0,0,0,0);
+  return {start:start.getTime(), end:end.getTime()};
+}
+
+function dateKey(ts){
+  const d = new Date(ts);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function parseDateKey(key){
+  const [y,m,d] = key.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+
+function collecterRevenusParJour(startTs, endTs){
+  const map = {};
+  const addTo = (ts, montant)=>{
+    if(ts==null || ts<startTs || ts>=endTs || !montant) return;
+    const k = dateKey(ts);
+    map[k] = (map[k]||0) + montant;
+  };
+  data.psHistory.forEach(h=>addTo(h.ts, h.montant));
+  data.tashHistory.forEach(h=>addTo(h.ts, h.commission));
+  data.ventesHistory.forEach(v=>addTo(v.ts, v.montant));
+  data.reparations.forEach(r=>{
+    addTo(r.ts, r.acompte);
+    if(r.montantFinal) addTo(r.recupTs, r.montantFinal);
+  });
+  return map;
+}
+
+function produitLePlusVendu(startTs, endTs){
+  const map = {};
+  data.ventesHistory.forEach(v=>{
+    if(!v.ts || v.ts<startTs || v.ts>=endTs) return;
+    map[v.produit] = (map[v.produit]||0) + v.qte;
+  });
+  let best=null, bestQte=0;
+  Object.entries(map).forEach(([nom,qte])=>{ if(qte>bestQte){ best=nom; bestQte=qte; } });
+  return best ? {nom:best, qte:bestQte} : null;
+}
+
+function renderStatsMensuelles(){
+  const box = document.getElementById("statsMensuellesBox");
+  if(!box) return;
+  const cur = monthRange(0);
+  const prev = monthRange(-1);
+  const jourMap = collecterRevenusParJour(cur.start, cur.end);
+  let bestDay=null, bestVal=0;
+  Object.entries(jourMap).forEach(([d,v])=>{ if(v>bestVal){ bestDay=d; bestVal=v; } });
+  const totalCur = Object.values(jourMap).reduce((s,v)=>s+v,0);
+  const totalPrev = Object.values(collecterRevenusParJour(prev.start, prev.end)).reduce((s,v)=>s+v,0);
+  const topProduit = produitLePlusVendu(cur.start, cur.end);
+  const diffPct = totalPrev>0 ? (((totalCur-totalPrev)/totalPrev)*100) : (totalCur>0?100:0);
+  const nomMoisCur = new Date().toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
+
+  box.innerHTML = `
+    <p style="margin:4px 0;">📅 <strong>${nomMoisCur}</strong></p>
+    <p style="margin:4px 0;">💰 Revenu total du mois : <strong>${fmt(totalCur)}</strong></p>
+    <p style="margin:4px 0;">📈 Vs mois dernier (${fmt(totalPrev)}) : <strong style="color:${diffPct>=0?'var(--com)':'var(--danger)'}">${diffPct>=0?'+':''}${diffPct.toFixed(1)}%</strong></p>
+    <p style="margin:4px 0;">🏆 Meilleur jour : <strong>${bestDay ? parseDateKey(bestDay).toLocaleDateString('fr-FR') : '—'}</strong>${bestDay?(' ('+fmt(bestVal)+')'):''}</p>
+    <p style="margin:4px 0;">🛒 Produit le plus vendu : <strong>${topProduit ? topProduit.nom+' ('+topProduit.qte+' unités)' : '—'}</strong></p>
+  `;
+}
+
+/* ---------- STATISTIQUES ANNUELLES ---------- */
+function yearRange(offsetYears){
+  const now = new Date();
+  const start = new Date(now.getFullYear()+offsetYears, 0, 1, 0,0,0,0);
+  const end = new Date(now.getFullYear()+offsetYears+1, 0, 1, 0,0,0,0);
+  return {start:start.getTime(), end:end.getTime()};
+}
+
+function monthKey(ts){
+  const d = new Date(ts);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+}
+
+function collecterRevenusParMois(startTs, endTs){
+  const map = {};
+  const addTo = (ts, montant)=>{
+    if(ts==null || ts<startTs || ts>=endTs || !montant) return;
+    const k = monthKey(ts);
+    map[k] = (map[k]||0) + montant;
+  };
+  data.psHistory.forEach(h=>addTo(h.ts, h.montant));
+  data.tashHistory.forEach(h=>addTo(h.ts, h.commission));
+  data.ventesHistory.forEach(v=>addTo(v.ts, v.montant));
+  data.reparations.forEach(r=>{
+    addTo(r.ts, r.acompte);
+    if(r.montantFinal) addTo(r.recupTs, r.montantFinal);
+  });
+  return map;
+}
+
+function renderStatsAnnuelles(){
+  const box = document.getElementById("statsAnnuellesBox");
+  if(!box) return;
+  const cur = yearRange(0);
+  const prev = yearRange(-1);
+  const moisMap = collecterRevenusParMois(cur.start, cur.end);
+  let bestMonth=null, bestVal=0;
+  Object.entries(moisMap).forEach(([m,v])=>{ if(v>bestVal){ bestMonth=m; bestVal=v; } });
+  const totalCur = Object.values(moisMap).reduce((s,v)=>s+v,0);
+  const totalPrev = Object.values(collecterRevenusParMois(prev.start, prev.end)).reduce((s,v)=>s+v,0);
+  const topProduit = produitLePlusVendu(cur.start, cur.end);
+  const diffPct = totalPrev>0 ? (((totalCur-totalPrev)/totalPrev)*100) : (totalCur>0?100:0);
+  const anneeCur = new Date().getFullYear();
+  let bestMonthLabel = "—";
+  if(bestMonth){
+    const [y,m] = bestMonth.split("-").map(Number);
+    bestMonthLabel = new Date(y, m-1, 1).toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
+  }
+
+  box.innerHTML = `
+    <p style="margin:4px 0;">📆 <strong>Année ${anneeCur}</strong></p>
+    <p style="margin:4px 0;">💰 Revenu total de l'année : <strong>${fmt(totalCur)}</strong></p>
+    <p style="margin:4px 0;">📈 Vs année dernière (${fmt(totalPrev)}) : <strong style="color:${diffPct>=0?'var(--com)':'var(--danger)'}">${diffPct>=0?'+':''}${diffPct.toFixed(1)}%</strong></p>
+    <p style="margin:4px 0;">🏆 Meilleur mois : <strong>${bestMonthLabel}</strong>${bestMonth?(' ('+fmt(bestVal)+')'):''}</p>
+    <p style="margin:4px 0;">🛒 Produit le plus vendu (année) : <strong>${topProduit ? topProduit.nom+' ('+topProduit.qte+' unités)' : '—'}</strong></p>
+  `;
+}
+
+/* ---------- RENDER GLOBAL ---------- */
+function renderAll(){
+  renderDashboard();
+  renderPlaystation();
+  renderTasshilat();
+  renderStock();
+  renderReparations();
+}
+
+checkLockOnStart();
+renderAll();
+</script>
+</body>
+</html>
