@@ -227,6 +227,10 @@
         <small>Total général (informatif)</small>
         <div class="val" id="dashTotal">0 DH</div>
       </div>
+      <div class="caisse-box" style="background:var(--danger); color:#3a0a0a; margin-top:10px;">
+        <small style="opacity:.8;">Dépenses du jour (depuis "Journée terminée")</small>
+        <div class="val" id="dashDepensesJour">0 DH</div>
+      </div>
     </div>
 
     <div class="card">
@@ -495,6 +499,7 @@ function defaultData(){
     ventesHistory:[],
     reparations:[],
     depenses:[],
+    depensesJourCourant:0,
     security:{ pinEnabled:false, pin:"" },
     lastBackupTs:null,
     notesRapides:[]
@@ -599,6 +604,7 @@ function renderDashboard(){
   document.getElementById("dashCaisseCom").textContent = fmt(data.caisses.commerce);
   const total = data.caisses.playstation + data.caisses.tasshilat + data.caisses.commerce;
   document.getElementById("dashTotal").textContent = fmt(total);
+  document.getElementById("dashDepensesJour").textContent = fmt(data.depensesJourCourant || 0);
   document.getElementById("dashSolde").textContent = fmt(data.tasshilatSolde);
   const stockVal = data.stock.reduce((s,p)=>s + p.prixAchat*p.qte, 0);
   document.getElementById("dashStockVal").textContent = fmt(stockVal);
@@ -733,6 +739,7 @@ function enregistrerDepense(){
     ts: Date.now(),
     caisse, montant, motif
   });
+  data.depensesJourCourant = (data.depensesJourCourant || 0) + montant;
   document.getElementById("depenseMontant").value = "";
   document.getElementById("depenseMotif").value = "";
   saveData();
@@ -866,15 +873,16 @@ function renderRapportPeriode(){
 }
 
 function cloturerLaJournee(){
-  showModal("Clôturer la journée", "Vider les 3 caisses (PlayStation, Tasshilat, Commerce) d'un coup ? L'historique et les rapports par période restent intacts, seuls les soldes affichés sont remis à zéro.", {
+  showModal("Clôturer la journée", "Vider les 3 caisses (PlayStation, Tasshilat, Commerce) et remettre à zéro le compteur de dépenses du jour ? L'historique et les rapports par période restent intacts, seuls les soldes affichés sont remis à zéro.", {
     confirmLabel:"Terminer la journée",
     onConfirm:()=>{
       data.caisses.playstation = 0;
       data.caisses.tasshilat = 0;
       data.caisses.commerce = 0;
+      data.depensesJourCourant = 0;
       saveData();
       renderAll();
-      toast("Journée clôturée, les 3 caisses sont à zéro.");
+      toast("Journée clôturée, les 3 caisses et les dépenses du jour sont à zéro.");
     }
   });
 }
@@ -1319,6 +1327,7 @@ function payerAchatStock(caisseChoisie, montant, motif, callback){
     ts: Date.now(),
     caisse: caisseChoisie, montant, motif
   });
+  data.depensesJourCourant = (data.depensesJourCourant || 0) + montant;
   callback();
 }
 
